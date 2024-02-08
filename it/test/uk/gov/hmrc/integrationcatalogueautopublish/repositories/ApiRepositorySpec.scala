@@ -24,13 +24,20 @@ import org.scalatest.matchers.must.Matchers
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
+import uk.gov.hmrc.integrationcatalogueautopublish.utils.MdcTesting
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
+import uk.gov.hmrc.play.http.logging.Mdc
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
-class ApiRepositorySpec extends AnyFreeSpec with Matchers with DefaultPlayMongoRepositorySupport[Api] with OptionValues {
+class ApiRepositorySpec
+  extends AnyFreeSpec
+  with Matchers
+  with DefaultPlayMongoRepositorySupport[Api]
+  with OptionValues
+  with MdcTesting {
 
   import ApiRepositorySpec._
 
@@ -52,15 +59,20 @@ class ApiRepositorySpec extends AnyFreeSpec with Matchers with DefaultPlayMongoR
 
   "upsert" - {
     "must insert an API when it does not already exist" in {
+      setMdcData()
+
       val latest = for {
         saved <- repository.upsert(newApi)
         latest <- findById(saved.id.value)
       } yield latest
 
-      val api = latest.futureValue
+      val result = latest
+        .map(ResultWithMdcData(_))
+        .futureValue
 
-      api.value.publisherReference mustBe publishReference
-      api.value.deploymentTimestamp mustBe deploymentTimestamp
+      result.data.value.publisherReference mustBe publishReference
+      result.data.value.deploymentTimestamp mustBe deploymentTimestamp
+      result.mdcData mustBe testMdcData
     }
 
     "must update an API when it already exists" in {
@@ -72,9 +84,12 @@ class ApiRepositorySpec extends AnyFreeSpec with Matchers with DefaultPlayMongoR
         latest <- findById(updated.id.value)
       } yield latest
 
-      val api = latest.futureValue
+      val result = latest
+        .map(ResultWithMdcData(_))
+        .futureValue
 
-      api.value.deploymentTimestamp mustBe updatedTimestamp
+      result.data.value.deploymentTimestamp mustBe updatedTimestamp
+      result.mdcData mustBe testMdcData
     }
   }
 
@@ -85,33 +100,42 @@ class ApiRepositorySpec extends AnyFreeSpec with Matchers with DefaultPlayMongoR
         found <- repository.findByPublisherReference(publishReference)
       } yield found
 
-      val api = found.futureValue
+      val result = found
+        .map(ResultWithMdcData(_))
+        .futureValue
 
-      api.value.publisherReference mustBe publishReference
+      result.data.value.publisherReference mustBe publishReference
+      result.mdcData mustBe testMdcData
     }
 
     "must return None when the Api dos not exist" in {
-      val api = repository
+      val result = repository
         .findByPublisherReference(publishReference)
+        .map(ResultWithMdcData(_))
         .futureValue
 
-      api mustBe None
+      result.data mustBe None
+      result.mdcData mustBe testMdcData
     }
   }
 
   private def findById(id: String): Future[Option[Api]] = {
-    find(Filters.equal("_id", new ObjectId(id)))
-      .map(_.headOption)
+    Mdc.preservingMdc {
+      find(Filters.equal("_id", new ObjectId(id)))
+        .map(_.headOption)
+    }
   }
 
   private def insertApi(api: Api): Future[Api] = {
-    insert(api)
-      .map(
-        result =>
-          api.copy(
-            id = Some(result.getInsertedId.asObjectId().getValue.toString)
-          )
-      )
+    Mdc.preservingMdc {
+      insert(api)
+        .map(
+          result =>
+            api.copy(
+              id = Some(result.getInsertedId.asObjectId().getValue.toString)
+            )
+        )
+    }
   }
 
 }
