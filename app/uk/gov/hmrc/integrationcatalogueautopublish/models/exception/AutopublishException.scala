@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueautopublish.config
+package uk.gov.hmrc.integrationcatalogueautopublish.models.exception
 
-import com.google.inject.AbstractModule
-
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-  }
-}
+abstract class AutopublishException(message: String, cause: Throwable) extends RuntimeException(message, cause)
