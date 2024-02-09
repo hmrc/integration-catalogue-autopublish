@@ -27,7 +27,7 @@ This service uses MongoDb to store services and their last known deployment time
 The MongoDb version should be 5.0 and is constrained by the wider platform not this service.
 
 - Database: integration-catalogue-autopublish
-- Collection: tbd
+- Collection: apis
 
 ### OAS Discovery
 This service fetches services and OAS documents from the OAS Discovery service on the HIP platform.
