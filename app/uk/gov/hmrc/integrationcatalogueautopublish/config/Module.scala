@@ -16,12 +16,27 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.config
 
-import com.google.inject.AbstractModule
+import play.api.{Configuration, Environment}
+import play.api.inject.Binding
 
-class Module extends AbstractModule {
+import scala.collection.immutable.Seq
 
-  override def configure(): Unit = {
+class Module extends play.api.inject.Module {
 
-    bind(classOf[AppConfig]).asEagerSingleton()
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
+    Seq(
+      bind[AppConfig].toSelf.eagerly(),
+      authTokenInitialiserBinding(configuration)
+    )
   }
+
+  private def authTokenInitialiserBinding(configuration: Configuration): Binding[_] = {
+    if (configuration.get[Boolean]("create-internal-auth-token-on-start")) {
+      bind[InternalAuthTokenInitialiser].to[InternalAuthTokenInitialiserImpl].eagerly()
+    }
+    else {
+      bind[InternalAuthTokenInitialiser].to[NoOpInternalAuthTokenInitialiser].eagerly()
+    }
+  }
+
 }

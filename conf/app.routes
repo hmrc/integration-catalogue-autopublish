@@ -1,1 +1,2 @@
 # microservice specific routes
+PUT     /autopublish-now                        uk.gov.hmrc.integrationcatalogueautopublish.controllers.AutopublishController.autopublishNow()
