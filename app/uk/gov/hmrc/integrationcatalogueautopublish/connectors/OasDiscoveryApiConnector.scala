@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueautopublish.config
+package uk.gov.hmrc.integrationcatalogueautopublish.connectors
 
-import play.api.Configuration
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.OasDiscoveryException
+import uk.gov.hmrc.integrationcatalogueautopublish.models.{ApiDeployment, OasDocument}
 
-import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
+trait OasDiscoveryApiConnector {
 
-  val appName: String = config.get[String]("appName")
-  val integrationCatalogueInternalAuthToken: String = config.get[String]("internal-auth.integrationCatalogueToken")
-  val oasDiscoveryInternalAuthToken: String = config.get[String]("internal-auth.oasDiscoveryToken")
-  val maybeApiKey: Option[String] = config.getOptional[String]("api-key")
+  def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]]
 
+  def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, OasDocument]]
 }

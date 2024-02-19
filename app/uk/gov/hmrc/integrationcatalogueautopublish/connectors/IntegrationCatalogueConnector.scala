@@ -21,9 +21,9 @@ import play.api.Logging
 import play.api.http.HeaderNames._
 import play.api.http.MimeTypes.JSON
 import play.api.libs.json.{Format, Json}
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps, UpstreamErrorResponse}
-import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{ExceptionRaising, IntegrationCatalogueException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -41,7 +41,7 @@ class IntegrationCatalogueConnector @Inject()(
   import IntegrationCatalogueConnector._
 
   private val integrationCatalogueBaseUrl = servicesConfig.baseUrl("integration-catalogue")
-  private val clientAuthToken = appConfig.internalAuthToken
+  private val clientAuthToken = appConfig.integrationCatalogueInternalAuthToken
 
   def publishApi(id: String, oas: String)(implicit hc: HeaderCarrier): Future[Either[IntegrationCatalogueException, Unit]] = {
     httpClient.put(url"$integrationCatalogueBaseUrl/integration-catalogue/apis/publish")
