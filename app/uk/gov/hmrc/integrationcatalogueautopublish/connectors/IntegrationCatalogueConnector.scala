@@ -41,7 +41,7 @@ class IntegrationCatalogueConnector @Inject()(
   import IntegrationCatalogueConnector._
 
   private val integrationCatalogueBaseUrl = servicesConfig.baseUrl("integration-catalogue")
-  private val clientAuthToken = appConfig.integrationCatalogueInternalAuthToken
+  private val clientAuthToken = appConfig.internalAuthToken
 
   def publishApi(id: String, oas: String)(implicit hc: HeaderCarrier): Future[Either[IntegrationCatalogueException, Unit]] = {
     httpClient.put(url"$integrationCatalogueBaseUrl/integration-catalogue/apis/publish")

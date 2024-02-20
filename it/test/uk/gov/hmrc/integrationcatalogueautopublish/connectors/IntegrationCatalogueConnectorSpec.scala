@@ -115,8 +115,7 @@ class IntegrationCatalogueConnectorSpec
       Map(
         "microservice.services.integration-catalogue.host" -> wireMockHost,
         "microservice.services.integration-catalogue.port" -> wireMockPort,
-        "internal-auth.integrationCatalogueToken" -> internalAuthToken,
-        "internal-auth.oasDiscoveryToken" -> internalAuthToken,
+        "internal-auth.token" -> internalAuthToken,
         "appName" -> "test-app-name"
       )
     )

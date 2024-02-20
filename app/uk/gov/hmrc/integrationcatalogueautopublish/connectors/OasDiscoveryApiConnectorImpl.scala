@@ -29,6 +29,7 @@ import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{ExceptionRa
 import uk.gov.hmrc.integrationcatalogueautopublish.models.{ApiDeployment, OasDocument}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.util.Base64
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 @Singleton
@@ -38,12 +39,12 @@ class OasDiscoveryApiConnectorImpl @Inject()(
                                           appConfig: AppConfig
                                         )(implicit ec: ExecutionContext) extends OasDiscoveryApiConnector with Logging with ExceptionRaising {
 
-  private val clientAuthToken = appConfig.oasDiscoveryInternalAuthToken
   override def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]] = {
     httpClient.get(url"$baseUrl/v1/oas-deployments")
       .setHeader(ACCEPT -> JSON)
-      .setHeader(AUTHORIZATION -> clientAuthToken)
+      .setHeader(AUTHORIZATION -> authorization)
       .setHeader(apiKeyHeader: _*)
+      .withProxy
       .execute[Either[UpstreamErrorResponse, Seq[ApiDeployment]]]
       .map {
         case Right(apiDeployments) => Right(apiDeployments)
@@ -56,8 +57,9 @@ class OasDiscoveryApiConnectorImpl @Inject()(
   override def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, OasDocument]] = {
     httpClient.get(url"$baseUrl/v1/oas-deployments/$id/oas")
       .setHeader(ACCEPT -> JSON)
-      .setHeader(AUTHORIZATION -> clientAuthToken)
+      .setHeader(AUTHORIZATION -> authorization)
       .setHeader(apiKeyHeader: _*)
+      .withProxy
       .execute[Either[UpstreamErrorResponse, OasDocument]]
       .map {
         case Right(apiDeployments) => Right(apiDeployments)
@@ -86,4 +88,12 @@ class OasDiscoveryApiConnectorImpl @Inject()(
       s"$baseUrl/$path"
     }
   }
+
+  private def authorization: String = {
+    val clientId = servicesConfig.getConfString("oas-discovery.clientId", "")
+    val secret = servicesConfig.getConfString("oas-discovery.secret", "")
+
+    s"Basic ${Base64.getEncoder.encodeToString(s"$clientId:$secret".getBytes("UTF-8"))}"
+  }
+
 }

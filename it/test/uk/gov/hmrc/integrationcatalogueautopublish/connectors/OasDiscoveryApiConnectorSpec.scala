@@ -26,13 +26,12 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector.PublishError
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{OasDiscoveryCallError, OasDiscoveryException}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.{ApiDeployment, OasDocument}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Base64, UUID}
 
 class OasDiscoveryApiConnectorSpec
   extends AsyncFreeSpec
@@ -48,7 +47,7 @@ class OasDiscoveryApiConnectorSpec
       stubFor(
         get(urlEqualTo("/v1/oas-deployments"))
           .withHeader("Accept", equalTo("application/json"))
-          .withHeader("Authorization", equalTo(internalAuthToken))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .willReturn(
             aResponse()
               .withBody(Json.toJson(someDeployments).toString())
@@ -65,7 +64,7 @@ class OasDiscoveryApiConnectorSpec
       stubFor(
         get(urlEqualTo("/v1/oas-deployments"))
           .withHeader("Accept", equalTo("application/json"))
-          .withHeader("Authorization", equalTo(internalAuthToken))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .withHeader("x-api-key", equalTo(apiKey))
           .willReturn(
             aResponse()
@@ -118,7 +117,7 @@ class OasDiscoveryApiConnectorSpec
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
           .withHeader("Accept", equalTo("application/json"))
-          .withHeader("Authorization", equalTo(internalAuthToken))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .willReturn(
             aResponse()
               .withBody(Json.toJson(anOasDocument).toString())
@@ -135,7 +134,7 @@ class OasDiscoveryApiConnectorSpec
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
           .withHeader("Accept", equalTo("application/json"))
-          .withHeader("Authorization", equalTo(internalAuthToken))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .withHeader("x-api-key", equalTo(apiKey))
           .willReturn(
             aResponse()
@@ -185,8 +184,9 @@ class OasDiscoveryApiConnectorSpec
     var configMap: Map[String,Any] = Map(
       "microservice.services.oas-discovery.host" -> wireMockHost,
       "microservice.services.oas-discovery.port" -> wireMockPort,
-      "internal-auth.oasDiscoveryToken" -> internalAuthToken,
-      "internal-auth.integrationCatalogueToken" -> internalAuthToken,
+      "internal-auth.token" -> internalAuthToken,
+      "microservice.services.oas-discovery.clientId" -> testClientId,
+      "microservice.services.oas-discovery.secret" -> testSecret,
       "appName" -> "test-app-name"
     )
 
@@ -211,12 +211,9 @@ object OasDiscoveryApiConnectorSpec {
   private val apiKey = "test-api-key-for-ebridge"
   private val id = "test-id"
   private val oas = "test-oas"
-
-  private val errors = Seq(
-    PublishError(101, "test-error-101"),
-    PublishError(201, "test-error-201")
-  )
-
+  private val testClientId = "test-client-id"
+  private val testSecret = "test-secret"
+  private val oasDiscoveryAuth = s"Basic ${Base64.getEncoder.encodeToString(s"$testClientId:$testSecret".getBytes("UTF-8"))}"
   private val deploymentId1 = UUID.randomUUID().toString
   private val deploymentId2 = UUID.randomUUID().toString
   private val someDeployments = Seq(ApiDeployment(deploymentId1, Instant.now()), ApiDeployment(deploymentId2, Instant.now()))

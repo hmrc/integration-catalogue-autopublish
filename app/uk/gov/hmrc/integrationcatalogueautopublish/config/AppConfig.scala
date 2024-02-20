@@ -24,8 +24,7 @@ import javax.inject.{Inject, Singleton}
 class AppConfig @Inject()(config: Configuration) {
 
   val appName: String = config.get[String]("appName")
-  val integrationCatalogueInternalAuthToken: String = config.get[String]("internal-auth.integrationCatalogueToken")
-  val oasDiscoveryInternalAuthToken: String = config.get[String]("internal-auth.oasDiscoveryToken")
+  val internalAuthToken: String = config.get[String]("internal-auth.token")
   val maybeApiKey: Option[String] = config.getOptional[String]("api-key")
 
 }
