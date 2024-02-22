@@ -18,16 +18,50 @@ package uk.gov.hmrc.integrationcatalogueautopublish.services
 
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.AutopublishException
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, OasDiscoveryException}
+import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AutopublishService @Inject()() extends Logging{
+class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnector,
+                                    integrationCatalogueConnector: IntegrationCatalogueConnector,
+                                    apiRepository: ApiRepository)(implicit ec: ExecutionContext) extends Logging{
 
-  def autopublish(): Future[Either[AutopublishException, Unit]] = {
+  def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
-    Future.successful(Right(()))
+    oasDiscoveryConnector.allDeployments() flatMap {
+      case Right(deployments) =>
+        Future.sequence(deployments.map(deployment => {
+          apiRepository.findByPublisherReference(deployment.id) flatMap {
+            case Some(api) if api.deploymentTimestamp.isBefore(deployment.deploymentTimestamp) =>
+              publishAndUpsertRepository(api)
+            case None =>
+              publishAndUpsertRepository(Api(deployment.id, deployment.deploymentTimestamp))
+            case _ => Future.successful(Right(()))
+          }
+        })).flatMap(_ => Future.successful(Right(())))
+
+      case Left(e) =>
+        Future.successful(Left(e))
+    }
   }
 
+  def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+    oasDiscoveryConnector.oas(api.publisherReference) flatMap {
+      case Right(oasDocument) => integrationCatalogueConnector.publishApi(oasDocument.id, oasDocument.content) flatMap {
+        case Right(()) =>
+          apiRepository.upsert(api).flatMap(_ => Future.successful(Right()))
+        case Left(e) => Future.successful(Left(e))
+      }
+      case Left(e) => Future.successful(Left(e))
+    }
+  }
+
+  def allDeployments: Seq[ApiDeployment] = {
+    oasDiscoveryConnector.allDeployments()
+  }
 }
