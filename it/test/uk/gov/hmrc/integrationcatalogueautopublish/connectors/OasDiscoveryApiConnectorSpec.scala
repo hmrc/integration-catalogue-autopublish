@@ -191,7 +191,7 @@ class OasDiscoveryApiConnectorSpec
     )
 
     if (maybeApiKey.isDefined) {
-      configMap = configMap + ("api-key" -> maybeApiKey.get)
+      configMap = configMap + ("microservice.services.oas-discovery.api-key" -> maybeApiKey.get)
     }
 
     val configuration = Configuration.from(configMap)

@@ -71,9 +71,9 @@ class OasDiscoveryApiConnectorImpl @Inject()(
   }
 
   private def apiKeyHeader: Seq[(String, String)] = {
-    appConfig.maybeApiKey match {
-      case Some(key) => Seq(("x-api-key", key))
-      case _ => Seq.empty
+    servicesConfig.getConfString("oas-discovery.api-key", "not configured") match {
+      case "not configured" => Seq.empty
+      case key => Seq(("x-api-key", key))
       }
   }
 
