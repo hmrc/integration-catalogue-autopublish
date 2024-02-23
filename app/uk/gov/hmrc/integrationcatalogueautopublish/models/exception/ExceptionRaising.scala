@@ -38,6 +38,19 @@ trait ExceptionRaising {
 
   }
 
+  object raiseOasDiscoveryException {
+
+    def unexpectedResponse(response: UpstreamErrorResponse): OasDiscoveryException = {
+      log(OasDiscoveryException.unexpectedResponse(response))
+    }
+
+    def error(throwable: Throwable): OasDiscoveryException = {
+      log(OasDiscoveryException.error(throwable))
+    }
+
+  }
+
+
   private def log[T <: AutopublishException](e: T): T = {
     logger.warn("Raised application exception", e)
     e

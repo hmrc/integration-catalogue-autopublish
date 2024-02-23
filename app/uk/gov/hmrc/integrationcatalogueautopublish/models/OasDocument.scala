@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueautopublish.config
+package uk.gov.hmrc.integrationcatalogueautopublish.models
 
-import play.api.Configuration
+import play.api.libs.json.{Format, Json}
 
-import javax.inject.{Inject, Singleton}
+case class OasDocument(id: String, content: String)
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
-
-  val appName: String = config.get[String]("appName")
-  val internalAuthToken: String = config.get[String]("internal-auth.token")
-
+object OasDocument {
+  implicit val formatOasDocument: Format[OasDocument] = Json.format[OasDocument]
 }

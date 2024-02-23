@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueautopublish.config
+package uk.gov.hmrc.integrationcatalogueautopublish.models
 
-import play.api.Configuration
+import play.api.libs.json.{Format, Json}
 
-import javax.inject.{Inject, Singleton}
+import java.time.Instant
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
+case class ApiDeployment(id: String, deploymentTimestamp: Instant)
 
-  val appName: String = config.get[String]("appName")
-  val internalAuthToken: String = config.get[String]("internal-auth.token")
+object ApiDeployment {
+
+  implicit val formatApiDeployment: Format[ApiDeployment] = Json.format[ApiDeployment]
+  implicit val orderingApiDeployment: Ordering[ApiDeployment] = Ordering.by(_.id)
 
 }

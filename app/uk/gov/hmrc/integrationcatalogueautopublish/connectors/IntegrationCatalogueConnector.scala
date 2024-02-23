@@ -21,9 +21,9 @@ import play.api.Logging
 import play.api.http.HeaderNames._
 import play.api.http.MimeTypes.JSON
 import play.api.libs.json.{Format, Json}
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps, UpstreamErrorResponse}
-import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{ExceptionRaising, IntegrationCatalogueException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
