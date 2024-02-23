@@ -45,23 +45,20 @@ class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnec
           }
         })).flatMap(_ => Future.successful(Right(())))
 
-      case Left(e) =>
-        Future.successful(Left(e))
+      case Left(_) =>
+        Future.successful(Right())
     }
   }
 
-  def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+  private def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     oasDiscoveryConnector.oas(api.publisherReference) flatMap {
       case Right(oasDocument) => integrationCatalogueConnector.publishApi(oasDocument.id, oasDocument.content) flatMap {
         case Right(()) =>
-          apiRepository.upsert(api).flatMap(_ => Future.successful(Right()))
+          apiRepository.upsert(api).flatMap(_ => Future.successful(Right(())))
         case Left(e) => Future.successful(Left(e))
       }
       case Left(e) => Future.successful(Left(e))
     }
   }
 
-  def allDeployments: Seq[ApiDeployment] = {
-    oasDiscoveryConnector.allDeployments()
-  }
 }
