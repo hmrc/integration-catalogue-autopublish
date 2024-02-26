@@ -17,7 +17,9 @@
 package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.libs.json.JsValue
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -29,7 +31,7 @@ class AutopublishController @Inject()(
 )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def autopublishNow(): Action[AnyContent] = Action.async {
-    autopublishService.autopublish().map {
+    implicit request: Request[AnyContent] => autopublishService.autopublish().map {
       case Right(_) => NoContent
       case Left(e) => throw e
     }
