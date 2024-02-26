@@ -19,17 +19,17 @@ package uk.gov.hmrc.integrationcatalogueautopublish.services
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector, OasDiscoveryApiConnectorImpl}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, OasDiscoveryException}
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnectorImpl}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.AutopublishException
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnectorImpl,
-                                    integrationCatalogueConnector: IntegrationCatalogueConnector,
-                                    apiRepository: ApiRepository)(implicit ec: ExecutionContext) extends Logging{
+class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnectorImpl,
+                                   integrationCatalogueConnector: IntegrationCatalogueConnector,
+                                   apiRepository: ApiRepository)(implicit ec: ExecutionContext) extends Logging {
 
   def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
@@ -38,15 +38,14 @@ class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnec
         Future.sequence(deployments.map(deployment => {
           apiRepository.findByPublisherReference(deployment.id) flatMap {
             case Some(api) if api.deploymentTimestamp.isBefore(deployment.deploymentTimestamp) =>
-              publishAndUpsertRepository(api)
+              publishAndUpsertRepository(api.copy(deploymentTimestamp = deployment.deploymentTimestamp))
             case None =>
               publishAndUpsertRepository(Api(deployment.id, deployment.deploymentTimestamp))
             case _ => Future.successful(Right(()))
           }
         })).flatMap(_ => Future.successful(Right(())))
 
-      case Left(_) =>
-        Future.successful(Right())
+      case Left(e) => Future.successful(Left(e))
     }
   }
 
@@ -54,7 +53,13 @@ class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnec
     oasDiscoveryConnector.oas(api.publisherReference) flatMap {
       case Right(oasDocument) => integrationCatalogueConnector.publishApi(oasDocument.id, oasDocument.content) flatMap {
         case Right(()) =>
-          apiRepository.upsert(api).flatMap(_ => Future.successful(Right(())))
+          try {
+            apiRepository.upsert(api).flatMap(_ => Future.successful(Right(())))
+          } catch {
+            case e: Throwable =>
+              logger.error(s"Failed to upsert repo: ${e.getMessage}")
+              Future.successful(Right(()))
+          }
         case Left(e) => Future.successful(Left(e))
       }
       case Left(e) => Future.successful(Left(e))
