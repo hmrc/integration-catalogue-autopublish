@@ -15,46 +15,97 @@
  */
 
 package uk.gov.hmrc.integrationcatalogueautopublish.services
-
 import org.mockito.ArgumentMatchersSugar.any
-import org.mockito.MockitoSugar
+import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
-import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{ExceptionRaising, OasDiscoveryException}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{IntegrationCatalogueException, OasDiscoveryException}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment, OasDocument}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 
+
+
 class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSugar {
+
+  val mongoId = "mongo-id"
+  val testId = "test-id"
 
   "autopublish" - {
     "must handle failure of call to fetch all deployments" in {
       val fixture = buildFixture()
       val exception = OasDiscoveryException.unexpectedResponse(500)
       when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Left(exception)))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map(result => result must be(Right(())))
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map(result => {
+        verifyZeroInteractions(fixture.oasDiscoveryApiConnector.oas(any)(any))
+        verifyZeroInteractions(fixture.integrationCatalogueConnector.publishApi(any, any)(any))
+        verifyZeroInteractions(fixture.apiRepository.upsert(any))
+        result must be(Right(()))
+      })
     }
 
     "must handle no deployments" in {
       val fixture = buildFixture()
       when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq.empty)))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => result must be(Right(())))
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+        verifyZeroInteractions(fixture.oasDiscoveryApiConnector.oas(any)(any))
+        verifyZeroInteractions(fixture.integrationCatalogueConnector.publishApi(any, any)(any))
+        verifyZeroInteractions(fixture.apiRepository.upsert(any))
+        result must be(Right(()))
+      })
     }
 
     "must do nothing when the deployments are unchanged" in {
       val fixture = buildFixture()
       val now = Instant.now
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment("test-id", now)))))
-      when(fixture.apiRepository.findByPublisherReference("test-id")).thenReturn(Future.successful(Some(Api(Some("id"), "test-id", now))))
-      verifyZeroInteractions(fixture.oasDiscoveryApiConnector.oas(any)(any))
-      verifyZeroInteractions(fixture.integrationCatalogueConnector.publishApi(any,any)(any))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => result must be(Right(())))
+      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, now)))))
+      when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(Api(Some(mongoId), testId, now))))
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+        verifyZeroInteractions(fixture.oasDiscoveryApiConnector.oas(any)(any))
+        verifyZeroInteractions(fixture.integrationCatalogueConnector.publishApi(any, any)(any))
+        verifyZeroInteractions(fixture.apiRepository.upsert(any))
+        result must be(Right(()))
+      })
     }
 
+    "must publish new oas file and update repository when a deployment has changed" in {
+      val fixture = buildFixture()
+      val now = Instant.now
+      val earlier = now.minus(1, ChronoUnit.DAYS)
+      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, now)))))
+      val api = Api(Some(mongoId), testId, earlier)
+      when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
+      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right(OasDocument(testId,"some oas"))))
+      when(fixture.apiRepository.upsert(api)).thenReturn(Future.successful(api.copy(deploymentTimestamp = now)))
+      when(fixture.integrationCatalogueConnector.publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any)).thenReturn(Future.successful(Right(())))
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+        verify(fixture.integrationCatalogueConnector).publishApi(ArgumentMatchers.eq(testId),ArgumentMatchers.eq( "some oas"))(any)
+        verify(fixture.apiRepository).upsert(api)
+        result must be(Right(()))
+      })
+    }
+
+    "must not update repository when a deployment has changed but publish fails" in {
+      val fixture = buildFixture()
+      val now = Instant.now
+      val earlier = now.minus(1, ChronoUnit.DAYS)
+      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, now)))))
+      val api = Api(Some(mongoId), testId, earlier)
+      when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
+      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right(OasDocument(testId, "some oas"))))
+      when(fixture.apiRepository.upsert(api)).thenReturn(Future.successful(api.copy(deploymentTimestamp = now)))
+      when(fixture.integrationCatalogueConnector.publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any)).thenReturn(Future.successful(Left(IntegrationCatalogueException.unexpectedResponse(500))))
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+        verify(fixture.integrationCatalogueConnector).publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any)
+        verifyZeroInteractions(fixture.apiRepository.upsert(any))
+        result must be(Right(()))
+      })
+    }
   }
 
   private case class Fixture( apiRepository: ApiRepository,
@@ -70,4 +121,3 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
     Fixture(apiRepository, integrationCatalogueConnector, oasDiscoveryApiConnector, autopublishService)
   }
 }
-
