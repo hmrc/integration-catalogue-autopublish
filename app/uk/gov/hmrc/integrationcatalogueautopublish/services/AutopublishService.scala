@@ -19,7 +19,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.services
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector}
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector, OasDiscoveryApiConnectorImpl}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, OasDiscoveryException}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
@@ -27,7 +27,7 @@ import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnector,
+class AutopublishService @Inject()( oasDiscoveryConnector: OasDiscoveryApiConnectorImpl,
                                     integrationCatalogueConnector: IntegrationCatalogueConnector,
                                     apiRepository: ApiRepository)(implicit ec: ExecutionContext) extends Logging{
 

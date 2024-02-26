@@ -20,7 +20,7 @@ import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector}
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector, OasDiscoveryApiConnectorImpl}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{IntegrationCatalogueException, OasDiscoveryException}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment, OasDocument}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
@@ -116,7 +116,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
   private def buildFixture(): Fixture = {
     val apiRepository = mock[ApiRepository]
     val integrationCatalogueConnector = mock[IntegrationCatalogueConnector]
-    val oasDiscoveryApiConnector = mock[OasDiscoveryApiConnector]
+    val oasDiscoveryApiConnector = mock[OasDiscoveryApiConnectorImpl]
     val autopublishService = new AutopublishService(oasDiscoveryApiConnector, integrationCatalogueConnector, apiRepository)
     Fixture(apiRepository, integrationCatalogueConnector, oasDiscoveryApiConnector, autopublishService)
   }
