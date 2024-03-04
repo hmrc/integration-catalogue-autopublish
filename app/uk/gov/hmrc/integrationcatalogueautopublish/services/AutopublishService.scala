@@ -51,7 +51,7 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
 
   private def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     oasDiscoveryConnector.oas(api.publisherReference) flatMap {
-      case Right(oasDocument) => integrationCatalogueConnector.publishApi(oasDocument.id, oasDocument.content) flatMap {
+      case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument) flatMap {
         case Right(()) =>
           try {
             apiRepository.upsert(api).flatMap(_ => Future.successful(Right(())))

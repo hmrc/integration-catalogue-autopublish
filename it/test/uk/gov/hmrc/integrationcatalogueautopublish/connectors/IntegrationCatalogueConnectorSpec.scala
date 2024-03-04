@@ -116,7 +116,9 @@ class IntegrationCatalogueConnectorSpec
         "microservice.services.integration-catalogue.host" -> wireMockHost,
         "microservice.services.integration-catalogue.port" -> wireMockPort,
         "internal-auth.token" -> internalAuthToken,
-        "appName" -> "test-app-name"
+        "appName" -> "test-app-name",
+        "tasks.autopublish.initialDelay" -> "1 hour",
+        "tasks.autopublish.interval" -> "1 hour"
       )
     )
 

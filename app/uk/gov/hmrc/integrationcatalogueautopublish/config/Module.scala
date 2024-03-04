@@ -18,6 +18,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.config
 
 import play.api.{Configuration, Environment}
 import play.api.inject.Binding
+import uk.gov.hmrc.integrationcatalogueautopublish.tasks.AutopublishTask
 
 import scala.collection.immutable.Seq
 
@@ -26,6 +27,7 @@ class Module extends play.api.inject.Module {
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
     Seq(
       bind[AppConfig].toSelf.eagerly(),
+      bind[AutopublishTask].toSelf.eagerly(),
       authTokenInitialiserBinding(configuration)
     )
   }
