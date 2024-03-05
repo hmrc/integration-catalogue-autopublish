@@ -34,17 +34,24 @@ class AutopublishTask @Inject()(
   autopublishService: AutopublishService
 )(implicit ec: ExecutionContext) extends Logging {
 
-  actorSystem.scheduler.scheduleAtFixedRate(
-    initialDelay = toFiniteDuration(appConfig.autopublishTaskInitialDelay),
-    interval = toFiniteDuration(appConfig.autopublishTaskInterval),
-  ) {
-    () =>
-      try {
-        autopublishService.autopublish()(HeaderCarrier())
-      }
-      catch {
-        case NonFatal(e) => logger.error("Exception thrown by autopublish service", e)
-      }
+  if (appConfig.autopublishTaskInitialDelay.length > 0 && appConfig.autopublishTaskInterval.length > 0) {
+    logger.info("Configuring autopublish schedule")
+
+    actorSystem.scheduler.scheduleAtFixedRate(
+      initialDelay = toFiniteDuration(appConfig.autopublishTaskInitialDelay),
+      interval = toFiniteDuration(appConfig.autopublishTaskInterval),
+    ) {
+      () =>
+        try {
+          autopublishService.autopublish()(HeaderCarrier())
+        }
+        catch {
+          case NonFatal(e) => logger.error("Exception thrown by autopublish service", e)
+        }
+    }
+  }
+  else {
+    logger.info("No autopublish schedule defined")
   }
 
   private def toFiniteDuration(duration: Duration): FiniteDuration = {
