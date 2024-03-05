@@ -179,16 +179,16 @@ class OasDiscoveryApiConnectorSpec
 
   private def buildConnector(maybeApiKey: Option[String] = None): OasDiscoveryApiConnector = {
     var configMap: Map[String,Any] = Map(
-      "microservice.services.oas-discovery.host" -> wireMockHost,
-      "microservice.services.oas-discovery.port" -> wireMockPort,
+      "microservice.services.oas-discovery-api.host" -> wireMockHost,
+      "microservice.services.oas-discovery-api.port" -> wireMockPort,
       "internal-auth.token" -> internalAuthToken,
-      "microservice.services.oas-discovery.clientId" -> testClientId,
-      "microservice.services.oas-discovery.secret" -> testSecret,
+      "microservice.services.oas-discovery-api.clientId" -> testClientId,
+      "microservice.services.oas-discovery-api.secret" -> testSecret,
       "appName" -> "test-app-name"
     )
 
     if (maybeApiKey.isDefined) {
-      configMap = configMap + ("microservice.services.oas-discovery.api-key" -> maybeApiKey.get)
+      configMap = configMap + ("microservice.services.oas-discovery-api.api-key" -> maybeApiKey.get)
     }
 
     val configuration = Configuration.from(configMap)
