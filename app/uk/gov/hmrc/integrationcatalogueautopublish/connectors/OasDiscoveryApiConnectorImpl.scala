@@ -71,15 +71,15 @@ class OasDiscoveryApiConnectorImpl @Inject()(
   }
 
   private def apiKeyHeader: Seq[(String, String)] = {
-    servicesConfig.getConfString("oas-discovery.api-key", "not configured") match {
+    servicesConfig.getConfString("oas-discovery-api.api-key", "not configured") match {
       case "not configured" => Seq.empty
       case key => Seq(("x-api-key", key))
       }
   }
 
   private def baseUrl: String = {
-    val baseUrl = servicesConfig.baseUrl("oas-discovery")
-    val path = servicesConfig.getConfString("oas-discovery.path", "")
+    val baseUrl = servicesConfig.baseUrl("oas-discovery-api")
+    val path = servicesConfig.getConfString("oas-discovery-api.path", "")
 
     if (path.isEmpty) {
       baseUrl
@@ -90,8 +90,8 @@ class OasDiscoveryApiConnectorImpl @Inject()(
   }
 
   private def authorization: String = {
-    val clientId = servicesConfig.getConfString("oas-discovery.clientId", "")
-    val secret = servicesConfig.getConfString("oas-discovery.secret", "")
+    val clientId = servicesConfig.getConfString("oas-discovery-api.clientId", "")
+    val secret = servicesConfig.getConfString("oas-discovery-api.secret", "")
 
     s"Basic ${Base64.getEncoder.encodeToString(s"$clientId:$secret".getBytes("UTF-8"))}"
   }
