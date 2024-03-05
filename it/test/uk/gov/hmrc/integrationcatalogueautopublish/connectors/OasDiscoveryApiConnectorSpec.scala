@@ -25,9 +25,8 @@ import play.api.Configuration
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
-import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
+import uk.gov.hmrc.integrationcatalogueautopublish.models.ApiDeployment
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{OasDiscoveryCallError, OasDiscoveryException}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.{ApiDeployment, OasDocument}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.Instant
@@ -111,40 +110,38 @@ class OasDiscoveryApiConnectorSpec
   }
 
   "oas" - {
-    "must place the correct request to Oas Discovery Api and return deployments" in {
-
-
+    "must place the correct request to Oas Discovery Api and return the OAS document" in {
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
-          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Accept", equalTo("application/yaml"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .willReturn(
             aResponse()
-              .withBody(Json.toJson(anOasDocument).toString())
+              .withBody(oas)
           )
       )
 
       buildConnector().oas(id)(HeaderCarrier()).map {
         result =>
-          result mustBe Right(anOasDocument)
+          result mustBe Right(oas)
       }
     }
 
     "must set the api key header when it is defined in config" in {
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
-          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Accept", equalTo("application/yaml"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .withHeader("x-api-key", equalTo(apiKey))
           .willReturn(
             aResponse()
-              .withBody(Json.toJson(anOasDocument).toString())
+              .withBody(oas)
           )
       )
 
       buildConnector(Some(apiKey)).oas(id)(HeaderCarrier()).map {
         result =>
-          result mustBe Right(anOasDocument)
+          result mustBe Right(oas)
       }
     }
 
@@ -198,9 +195,7 @@ class OasDiscoveryApiConnectorSpec
 
     val servicesConfig = new ServicesConfig(configuration)
 
-    val appConfig = new AppConfig(configuration)
-
-    new OasDiscoveryApiConnectorImpl(servicesConfig, httpClientV2, appConfig)
+    new OasDiscoveryApiConnectorImpl(servicesConfig, httpClientV2)
   }
 
 }
@@ -217,6 +212,5 @@ object OasDiscoveryApiConnectorSpec {
   private val deploymentId1 = UUID.randomUUID().toString
   private val deploymentId2 = UUID.randomUUID().toString
   private val someDeployments = Seq(ApiDeployment(deploymentId1, Instant.now()), ApiDeployment(deploymentId2, Instant.now()))
-  private val anOasDocument = OasDocument(id, oas)
 
 }

@@ -40,6 +40,10 @@ trait ExceptionRaising {
 
   object raiseOasDiscoveryException {
 
+    def unexpectedResponse(statusCode: Int): OasDiscoveryException = {
+      log(OasDiscoveryException.unexpectedResponse(statusCode))
+    }
+
     def unexpectedResponse(response: UpstreamErrorResponse): OasDiscoveryException = {
       log(OasDiscoveryException.unexpectedResponse(response))
     }

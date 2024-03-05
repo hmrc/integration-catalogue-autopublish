@@ -22,14 +22,12 @@ import org.scalatest.matchers.must.Matchers
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnector, OasDiscoveryApiConnectorImpl}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{IntegrationCatalogueException, OasDiscoveryException}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment, OasDocument}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.{Api, ApiDeployment}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
-
-
 
 class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSugar {
 
@@ -81,7 +79,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
-      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right(OasDocument(testId,"some oas"))))
+      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right("some oas")))
       val updatedApi = api.copy(deploymentTimestamp = now)
       when(fixture.apiRepository.upsert(updatedApi)).thenReturn(Future.successful(updatedApi))
       when(fixture.integrationCatalogueConnector.publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any)).thenReturn(Future.successful(Right(())))
@@ -99,7 +97,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, now)))))
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
-      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right(OasDocument(testId, "some oas"))))
+      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right("some oas")))
       when(fixture.apiRepository.upsert(api)).thenReturn(Future.successful(api.copy(deploymentTimestamp = now)))
       when(fixture.integrationCatalogueConnector.publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any)).thenReturn(Future.successful(Left(IntegrationCatalogueException.unexpectedResponse(500))))
       fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
@@ -117,7 +115,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(any)).thenReturn(Future.successful(Some(api)))
-      when(fixture.oasDiscoveryApiConnector.oas(any)(any)).thenReturn(Future.successful(Right(OasDocument(testId, "some oas"))))
+      when(fixture.oasDiscoveryApiConnector.oas(any)(any)).thenReturn(Future.successful(Right("some oas")))
       val updatedApi = api.copy(deploymentTimestamp = now)
       when(fixture.apiRepository.upsert(updatedApi)).thenThrow(new Exception("bang"))
       when(fixture.integrationCatalogueConnector.publishApi(any, any)(any)).thenReturn(Future.successful(Right(())))

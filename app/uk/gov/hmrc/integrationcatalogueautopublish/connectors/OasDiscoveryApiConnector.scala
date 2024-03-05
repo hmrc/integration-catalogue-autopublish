@@ -17,8 +17,8 @@
 package uk.gov.hmrc.integrationcatalogueautopublish.connectors
 
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.integrationcatalogueautopublish.models.ApiDeployment
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.OasDiscoveryException
-import uk.gov.hmrc.integrationcatalogueautopublish.models.{ApiDeployment, OasDocument}
 
 import scala.concurrent.Future
 
@@ -26,5 +26,5 @@ trait OasDiscoveryApiConnector {
 
   def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]]
 
-  def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, OasDocument]]
+  def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]]
 }

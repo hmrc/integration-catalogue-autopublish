@@ -19,11 +19,14 @@ package uk.gov.hmrc.integrationcatalogueautopublish.config
 import play.api.Configuration
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.Duration
 
 @Singleton
 class AppConfig @Inject()(config: Configuration) {
 
   val appName: String = config.get[String]("appName")
   val internalAuthToken: String = config.get[String]("internal-auth.token")
+  val autopublishTaskInitialDelay: Duration = config.get[Duration]("tasks.autopublish.initialDelay")
+  val autopublishTaskInterval: Duration = config.get[Duration]("tasks.autopublish.interval")
 
 }

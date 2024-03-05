@@ -17,9 +17,7 @@
 package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
-import play.api.libs.json.JsValue
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
