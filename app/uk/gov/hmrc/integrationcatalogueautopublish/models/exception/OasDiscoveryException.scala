@@ -33,7 +33,7 @@ object OasDiscoveryException {
   }
 
   def unexpectedResponse(statusCode: Int): OasDiscoveryException = {
-    OasDiscoveryException(s"Unexpected response $statusCode returned from Integration Catalogue", OasDiscoveryUnexpectedResponse)
+    OasDiscoveryException(s"Unexpected response $statusCode returned from OAS Discovery API", OasDiscoveryUnexpectedResponse)
   }
 
   def unexpectedResponse(response: UpstreamErrorResponse): OasDiscoveryException = {
@@ -41,7 +41,7 @@ object OasDiscoveryException {
   }
 
   def error(throwable: Throwable): OasDiscoveryException = {
-    OasDiscoveryException("Error calling Integration Catalogue", throwable, OasDiscoveryCallError)
+    OasDiscoveryException("Error calling OAS Discovery API", throwable, OasDiscoveryCallError)
   }
 
 }
