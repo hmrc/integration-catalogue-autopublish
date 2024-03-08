@@ -36,12 +36,17 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
     oasDiscoveryConnector.allDeployments() flatMap {
       case Right(deployments) =>
         Future.sequence(deployments.map(deployment => {
-          apiRepository.findByPublisherReference(deployment.id) flatMap {
-            case Some(api) if api.deploymentTimestamp.isBefore(deployment.deploymentTimestamp) =>
-              publishAndUpsertRepository(api.copy(deploymentTimestamp = deployment.deploymentTimestamp))
-            case None =>
-              publishAndUpsertRepository(Api(deployment.id, deployment.deploymentTimestamp))
-            case _ => Future.successful(Right(()))
+          deployment.deploymentTimestamp match {
+            case Some(deploymentTimestamp) =>
+              apiRepository.findByPublisherReference(deployment.id) flatMap {
+                case Some(api) if api.deploymentTimestamp.isBefore(deploymentTimestamp) =>
+                  publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp))
+                case None =>
+                  publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp))
+                case _ => Future.successful(Right(()))
+              }
+            case _ =>
+              Future.successful(Right(()))
           }
         })).flatMap(_ => Future.successful(Right(())))
 
