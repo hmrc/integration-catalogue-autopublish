@@ -20,7 +20,7 @@ import play.api.libs.json.{Format, Json}
 
 import java.time.Instant
 
-case class ApiDeployment(id: String, deploymentTimestamp: Instant)
+case class ApiDeployment(id: String, deploymentTimestamp: Option[Instant])
 
 object ApiDeployment {
 

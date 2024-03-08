@@ -211,6 +211,10 @@ object OasDiscoveryApiConnectorSpec {
   private val oasDiscoveryAuth = s"Basic ${Base64.getEncoder.encodeToString(s"$testClientId:$testSecret".getBytes("UTF-8"))}"
   private val deploymentId1 = UUID.randomUUID().toString
   private val deploymentId2 = UUID.randomUUID().toString
-  private val someDeployments = Seq(ApiDeployment(deploymentId1, Instant.now()), ApiDeployment(deploymentId2, Instant.now()))
+
+  private val someDeployments = Seq(
+    ApiDeployment(deploymentId1, Some(Instant.now())),
+    ApiDeployment(deploymentId2, Some(Instant.now()))
+  )
 
 }
