@@ -20,6 +20,7 @@ import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.ContentTypes.JSON
 import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION}
+import play.api.libs.json.Json
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, HttpResponse, StringContextOps, UpstreamErrorResponse}
@@ -46,7 +47,10 @@ class OasDiscoveryApiConnectorImpl @Inject()(
       .withProxy
       .execute[Either[UpstreamErrorResponse, Seq[ApiDeployment]]]
       .map {
-        case Right(apiDeployments) => Right(apiDeployments)
+        case Right(apiDeployments) => {
+          logger.info(s"Retrieved deployments: ${Json.toJson(apiDeployments)}")
+          Right(apiDeployments)
+        }
         case Left(e) => Left(raiseOasDiscoveryException.unexpectedResponse(e))
       }.recover {
       case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable))
@@ -63,6 +67,7 @@ class OasDiscoveryApiConnectorImpl @Inject()(
       .map(
         response =>
           if (is2xx(response.status)) {
+            logger.info(s"Retrieved oas for id $id: ${response.body}")
             Right(response.body)
           }
           else {
