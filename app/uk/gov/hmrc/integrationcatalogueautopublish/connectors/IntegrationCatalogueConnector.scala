@@ -33,10 +33,10 @@ import scala.util.control.NonFatal
 
 @Singleton
 class IntegrationCatalogueConnector @Inject()(
-  servicesConfig: ServicesConfig,
-  httpClient: HttpClientV2,
-  appConfig: AppConfig
-)(implicit ec: ExecutionContext) extends Logging with ExceptionRaising {
+                                               servicesConfig: ServicesConfig,
+                                               httpClient: HttpClientV2,
+                                               appConfig: AppConfig
+                                             )(implicit ec: ExecutionContext) extends Logging with ExceptionRaising {
 
   import IntegrationCatalogueConnector._
 
@@ -51,12 +51,17 @@ class IntegrationCatalogueConnector @Inject()(
       .withBody(Json.toJson(PublishRequest(id, oas)))
       .execute[Either[UpstreamErrorResponse, PublishResult]]
       .map {
-        case Right(publishResult) if publishResult.isSuccess => Right(())
-        case Right(publishResult) => Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+        case Right(publishResult) => {
+          logger.info(s"Publish result: ${(Json.toJson(publishResult))}")
+          publishResult.isSuccess match {
+            case true => Right(())
+            case _ => Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+          }
+        }
         case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e))
       }.recover {
-        case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
-      }
+      case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
+    }
   }
 
 }

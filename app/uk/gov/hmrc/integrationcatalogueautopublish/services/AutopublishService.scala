@@ -59,7 +59,10 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
       case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument) flatMap {
         case Right(()) =>
           try {
-            apiRepository.upsert(api).flatMap(_ => Future.successful(Right(())))
+            apiRepository.upsert(api).flatMap(updated => {
+              logger.info(s"Api repository updated: $updated")
+              Future.successful(Right(()))
+            })
           } catch {
             case e: Throwable =>
               logger.error(s"Failed to upsert repo: ${e.getMessage}")
