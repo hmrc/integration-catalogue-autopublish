@@ -5,6 +5,10 @@
         <encoder class="uk.gov.hmrc.play.logging.JsonEncoder"/>
     </appender>
 
+    <logger name="uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService" level="INFO"/>
+
+    <logger name="uk.gov.hmrc.integrationcatalogueautopublish.services.IntegrationCatalogueConnector" level="INFO"/>
+
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
     </root>
