@@ -7,7 +7,7 @@
 
     <logger name="uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService" level="INFO"/>
 
-    <logger name="uk.gov.hmrc.integrationcatalogueautopublish.services.IntegrationCatalogueConnector" level="INFO"/>
+    <logger name="uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector" level="INFO"/>
 
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
