@@ -36,6 +36,9 @@ trait ExceptionRaising {
       log(IntegrationCatalogueException.publishError(error))
     }
 
+    def missingTeamLink(id: String): IntegrationCatalogueException = {
+      log(IntegrationCatalogueException.missingTeamLink(id))
+    }
   }
 
   object raiseOasDiscoveryException {

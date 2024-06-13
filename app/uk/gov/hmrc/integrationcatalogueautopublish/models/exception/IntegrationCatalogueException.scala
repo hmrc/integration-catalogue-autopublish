@@ -23,6 +23,7 @@ sealed trait IntegrationCatalogueIssue
 case object UnexpectedResponse extends IntegrationCatalogueIssue
 case object CallError extends IntegrationCatalogueIssue
 case object PublishError extends IntegrationCatalogueIssue
+case object MissingTeamLink extends IntegrationCatalogueIssue
 
 case class IntegrationCatalogueException(message: String, cause: Throwable, issue: IntegrationCatalogueIssue) extends AutopublishException(message, cause)
 
@@ -46,6 +47,10 @@ object IntegrationCatalogueException {
 
   def publishError(error: String): IntegrationCatalogueException = {
     IntegrationCatalogueException(s"Publish error: $error", PublishError)
+  }
+
+  def missingTeamLink(id: String): IntegrationCatalogueException = {
+    IntegrationCatalogueException(s"Missing team link for API $id", MissingTeamLink)
   }
 
 }

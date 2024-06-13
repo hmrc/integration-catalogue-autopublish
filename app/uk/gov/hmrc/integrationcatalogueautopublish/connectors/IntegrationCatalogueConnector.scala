@@ -20,6 +20,7 @@ import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.HeaderNames._
 import play.api.http.MimeTypes.JSON
+import play.api.http.Status.NOT_FOUND
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -51,13 +52,15 @@ class IntegrationCatalogueConnector @Inject()(
       .withBody(Json.toJson(PublishRequest(id, oas)))
       .execute[Either[UpstreamErrorResponse, PublishResult]]
       .map {
-        case Right(publishResult) => {
-          logger.info(s"Publish result: ${(Json.toJson(publishResult))}")
-          publishResult.isSuccess match {
-            case true => Right(())
-            case _ => Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+        case Right(publishResult) =>
+          logger.info(s"Publish result: ${Json.toJson(publishResult)}")
+
+          if (publishResult.isSuccess) {
+            Right(())
+          } else {
+            Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
           }
-        }
+        case Left(e) if e.statusCode == NOT_FOUND => Left(raiseIntegrationCatalogueException.missingTeamLink(id))
         case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e))
       }.recover {
       case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
@@ -68,7 +71,7 @@ class IntegrationCatalogueConnector @Inject()(
 
 object IntegrationCatalogueConnector {
 
-  case class PublishRequest(publisherReference: Option[String], platformType: String, specificationType: String, contents: String)
+  case class PublishRequest(publisherReference: Option[String], platformType: String, specificationType: String, contents: String, autopublish: Boolean)
 
   object PublishRequest {
 
@@ -76,7 +79,7 @@ object IntegrationCatalogueConnector {
     val DEFAULT_SPECIFICATION_TYPE: String = "OAS_V3"
 
     def apply(publisherReference: String, contents: String): PublishRequest = {
-      PublishRequest(Some(publisherReference), DEFAULT_PLATFORM_TYPE, DEFAULT_SPECIFICATION_TYPE, contents)
+      PublishRequest(Some(publisherReference), DEFAULT_PLATFORM_TYPE, DEFAULT_SPECIFICATION_TYPE, contents, autopublish = true)
     }
 
     implicit val formatPublishRequest: Format[PublishRequest] = Json.format[PublishRequest]
