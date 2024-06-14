@@ -20,7 +20,6 @@ import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.HeaderNames._
 import play.api.http.MimeTypes.JSON
-import play.api.http.Status.NOT_FOUND
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -55,12 +54,14 @@ class IntegrationCatalogueConnector @Inject()(
         case Right(publishResult) =>
           logger.info(s"Publish result: ${Json.toJson(publishResult)}")
 
-          if (publishResult.isSuccess) {
-            Right(())
-          } else {
-            Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+          publishResult match {
+            case PublishResult(true, _) =>
+              Right(())
+            case PublishResult(false, errors) if errors.exists(_.code.equals(ErrorCodes.MISSING_TEAM_LINK)) =>
+              Left(raiseIntegrationCatalogueException.missingTeamLink(id))
+            case _ =>
+              Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
           }
-        case Left(e) if e.statusCode == NOT_FOUND => Left(raiseIntegrationCatalogueException.missingTeamLink(id))
         case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e))
       }.recover {
       case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
@@ -107,6 +108,14 @@ object IntegrationCatalogueConnector {
   object PublishResult {
 
     implicit val formatPublishResult: Format[PublishResult] = Json.format[PublishResult]
+
+  }
+
+  object ErrorCodes {
+
+    val OAS_PARSE_ERROR  = 1000
+    val API_UPSERT_ERROR = 1001
+    val MISSING_TEAM_LINK = 1002
 
   }
 

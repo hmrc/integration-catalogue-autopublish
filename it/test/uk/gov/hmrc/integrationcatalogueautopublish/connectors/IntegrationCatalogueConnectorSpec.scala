@@ -22,12 +22,11 @@ import org.scalatest.EitherValues
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.Configuration
-import play.api.http.Status.NOT_FOUND
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector.{PublishError, PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector.{ErrorCodes, PublishError, PublishRequest, PublishResult}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{CallError, IntegrationCatalogueException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -62,12 +61,17 @@ class IntegrationCatalogueConnectorSpec
       }
     }
 
-    "must return IntegrationCatalogueException with MissingTeamLink issue when Integration Catalogue returns a 404 Not Found" in {
+    "must return IntegrationCatalogueException with MissingTeamLink issue when Integration Catalogue returns an error stating this" in {
+      val result = buildPublishResult(
+        isSuccess = false,
+        errors = Seq(PublishError(ErrorCodes.MISSING_TEAM_LINK, "test-message"))
+      )
+
       stubFor(
         put(urlEqualTo(s"/integration-catalogue/apis/publish"))
           .willReturn(
             aResponse()
-              .withStatus(NOT_FOUND)
+              .withBody(Json.toJson(result).toString())
           )
       )
 
