@@ -51,13 +51,17 @@ class IntegrationCatalogueConnector @Inject()(
       .withBody(Json.toJson(PublishRequest(id, oas)))
       .execute[Either[UpstreamErrorResponse, PublishResult]]
       .map {
-        case Right(publishResult) => {
-          logger.info(s"Publish result: ${(Json.toJson(publishResult))}")
-          publishResult.isSuccess match {
-            case true => Right(())
-            case _ => Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+        case Right(publishResult) =>
+          logger.info(s"Publish result: ${Json.toJson(publishResult)}")
+
+          publishResult match {
+            case PublishResult(true, _) =>
+              Right(())
+            case PublishResult(false, errors) if errors.exists(_.code.equals(ErrorCodes.MISSING_TEAM_LINK)) =>
+              Left(raiseIntegrationCatalogueException.missingTeamLink(id))
+            case _ =>
+              Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
           }
-        }
         case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e))
       }.recover {
       case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
@@ -68,7 +72,7 @@ class IntegrationCatalogueConnector @Inject()(
 
 object IntegrationCatalogueConnector {
 
-  case class PublishRequest(publisherReference: Option[String], platformType: String, specificationType: String, contents: String)
+  case class PublishRequest(publisherReference: Option[String], platformType: String, specificationType: String, contents: String, autopublish: Boolean)
 
   object PublishRequest {
 
@@ -76,7 +80,7 @@ object IntegrationCatalogueConnector {
     val DEFAULT_SPECIFICATION_TYPE: String = "OAS_V3"
 
     def apply(publisherReference: String, contents: String): PublishRequest = {
-      PublishRequest(Some(publisherReference), DEFAULT_PLATFORM_TYPE, DEFAULT_SPECIFICATION_TYPE, contents)
+      PublishRequest(Some(publisherReference), DEFAULT_PLATFORM_TYPE, DEFAULT_SPECIFICATION_TYPE, contents, autopublish = true)
     }
 
     implicit val formatPublishRequest: Format[PublishRequest] = Json.format[PublishRequest]
@@ -104,6 +108,14 @@ object IntegrationCatalogueConnector {
   object PublishResult {
 
     implicit val formatPublishResult: Format[PublishResult] = Json.format[PublishResult]
+
+  }
+
+  object ErrorCodes {
+
+    val OAS_PARSE_ERROR  = 1000
+    val API_UPSERT_ERROR = 1001
+    val MISSING_TEAM_LINK = 1002
 
   }
 

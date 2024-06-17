@@ -90,6 +90,29 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       })
     }
 
+    "must still update repository when a deployment has changed but no team link record was found" in {
+      val fixture = buildFixture()
+      val now = Instant.now
+      val earlier = now.minus(1, ChronoUnit.DAYS)
+
+      val deployment = ApiDeployment(testId, Some(now))
+      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
+
+      val api = Api(Some(mongoId), testId, earlier)
+      when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
+      when(fixture.oasDiscoveryApiConnector.oas(ArgumentMatchers.eq(testId))(any)).thenReturn(Future.successful(Right("some oas")))
+
+      val updatedApi = api.copy(deploymentTimestamp = now)
+      when(fixture.apiRepository.upsert(updatedApi)).thenReturn(Future.successful(updatedApi))
+      when(fixture.integrationCatalogueConnector.publishApi(ArgumentMatchers.eq(testId), ArgumentMatchers.eq("some oas"))(any))
+        .thenReturn(Future.successful(Left(IntegrationCatalogueException.missingTeamLink(testId))))
+
+      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+        verify(fixture.apiRepository).upsert(updatedApi)
+        result must be(Right(()))
+      })
+    }
+
     "must not update repository when a deployment has changed but publish fails" in {
       val fixture = buildFixture()
       val now = Instant.now

@@ -21,7 +21,7 @@ import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnectorImpl}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.AutopublishException
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, IntegrationCatalogueException, MissingTeamLink}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,7 +62,7 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
   private def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     oasDiscoveryConnector.oas(api.publisherReference) flatMap {
       case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument) flatMap {
-        case Right(()) =>
+        case Right(()) | Left(IntegrationCatalogueException(_, _, MissingTeamLink)) =>
           try {
             apiRepository.upsert(api).flatMap(updated => {
               logger.info(s"Api repository updated: $updated")

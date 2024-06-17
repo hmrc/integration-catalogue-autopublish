@@ -26,7 +26,7 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.{HttpClientV2Support, WireMockSupport}
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector.{PublishError, PublishRequest, PublishResult}
+import uk.gov.hmrc.integrationcatalogueautopublish.connectors.IntegrationCatalogueConnector.{ErrorCodes, PublishError, PublishRequest, PublishResult}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{CallError, IntegrationCatalogueException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -58,6 +58,26 @@ class IntegrationCatalogueConnectorSpec
       buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
         result =>
           result mustBe Right(())
+      }
+    }
+
+    "must return IntegrationCatalogueException with MissingTeamLink issue when Integration Catalogue returns an error stating this" in {
+      val result = buildPublishResult(
+        isSuccess = false,
+        errors = Seq(PublishError(ErrorCodes.MISSING_TEAM_LINK, "test-message"))
+      )
+
+      stubFor(
+        put(urlEqualTo(s"/integration-catalogue/apis/publish"))
+          .willReturn(
+            aResponse()
+              .withBody(Json.toJson(result).toString())
+          )
+      )
+
+      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+        result =>
+          result mustBe Left(IntegrationCatalogueException.missingTeamLink(id))
       }
     }
 
@@ -136,7 +156,7 @@ object IntegrationCatalogueConnectorSpec {
   private val id = "test-id"
   private val oas = "test-oas"
 
-  private val publishRequest = PublishRequest(Some(id), "HIP", "OAS_V3", oas)
+  private val publishRequest = PublishRequest(Some(id), "HIP", "OAS_V3", oas, autopublish = true)
 
   private val errors = Seq(
     PublishError(101, "test-error-101"),
