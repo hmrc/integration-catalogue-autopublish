@@ -43,7 +43,7 @@ class OasDiscoveryApiConnectorImpl @Inject()(
     httpClient.get(url"$baseUrl/v1/oas-deployments")
       .setHeader(ACCEPT -> JSON)
       .setHeader(AUTHORIZATION -> authorization)
-      .setHeader(apiKeyHeader: _*)
+      .setHeader(apiKeyHeader*)
       .withProxy
       .execute[Either[UpstreamErrorResponse, Seq[ApiDeployment]]]
       .map {
@@ -61,7 +61,7 @@ class OasDiscoveryApiConnectorImpl @Inject()(
     httpClient.get(url"$baseUrl/v1/oas-deployments/$id/oas")
       .setHeader(ACCEPT -> "application/yaml")
       .setHeader(AUTHORIZATION -> authorization)
-      .setHeader(apiKeyHeader: _*)
+      .setHeader(apiKeyHeader*)
       .withProxy
       .execute[HttpResponse]
       .map(

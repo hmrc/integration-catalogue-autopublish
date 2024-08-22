@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
-import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -35,7 +37,6 @@ class AutopublishControllerSpec
   extends AnyFreeSpec
   with Matchers
   with MockitoSugar
-  with ArgumentMatchersSugar
   with OptionValues {
 
   "autopublishNow" - {

@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.models
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
+import play.api.libs.json.*
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.models.MongoIdentifier
 
 import java.time.Instant
