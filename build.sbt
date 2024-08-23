@@ -1,7 +1,7 @@
 import uk.gov.hmrc.DefaultBuildSettings
 
 ThisBuild / majorVersion := 0
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "3.4.2"
 
 lazy val microservice = Project("integration-catalogue-autopublish", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
@@ -12,10 +12,12 @@ lazy val microservice = Project("integration-catalogue-autopublish", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s",
   )
   .settings(resolvers += Resolver.jcenterRepo)
-  .settings(CodeCoverageSettings.settings: _*)
+  .settings(CodeCoverageSettings.settings*)
+  .settings(scalacOptions := scalacOptions.value.diff(Seq("-Wunused:all")))
 
 lazy val it = project
   .enablePlugins(PlayScala)
   .dependsOn(microservice % "test->test")
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.it)
+  .settings(scalacOptions := scalacOptions.value.diff(Seq("-Wunused:all")))

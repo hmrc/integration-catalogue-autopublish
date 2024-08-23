@@ -24,6 +24,7 @@ import org.scalatest.matchers.must.Matchers
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
+import uk.gov.hmrc.integrationcatalogueautopublish.repositories.models.MongoIdentifier
 import uk.gov.hmrc.integrationcatalogueautopublish.utils.MdcTesting
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
@@ -40,7 +41,6 @@ class ApiRepositorySpec
   with MdcTesting {
 
   import ApiRepositorySpec._
-
   private lazy val playApplication = {
     new GuiceApplicationBuilder()
       .overrides(
@@ -53,7 +53,7 @@ class ApiRepositorySpec
     playApplication.injector.instanceOf[ExecutionContext]
   }
 
-  override protected lazy val repository: ApiRepository = {
+  override protected val repository: ApiRepository = {
     playApplication.injector.instanceOf[ApiRepository]
   }
 

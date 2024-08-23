@@ -19,6 +19,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.repositories
 import com.google.inject.{Inject, Singleton}
 import com.mongodb.client.model.IndexOptions
 import org.mongodb.scala.model.{Filters, IndexModel, Indexes, ReplaceOptions}
+import org.mongodb.scala.SingleObservableFuture
 import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.models.MongoIdentifier._
 import uk.gov.hmrc.mongo.MongoComponent

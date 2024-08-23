@@ -24,7 +24,7 @@ import scala.collection.immutable.Seq
 
 class Module extends play.api.inject.Module {
 
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] = {
     Seq(
       bind[AppConfig].toSelf.eagerly(),
       bind[AutopublishTask].toSelf.eagerly(),
@@ -32,7 +32,7 @@ class Module extends play.api.inject.Module {
     )
   }
 
-  private def authTokenInitialiserBinding(configuration: Configuration): Binding[_] = {
+  private def authTokenInitialiserBinding(configuration: Configuration): Binding[?] = {
     if (configuration.get[Boolean]("create-internal-auth-token-on-start")) {
       bind[InternalAuthTokenInitialiser].to[InternalAuthTokenInitialiserImpl].eagerly()
     }
