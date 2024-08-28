@@ -24,7 +24,6 @@ import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, IntegrationCatalogueException, MissingTeamLink}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
-import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
