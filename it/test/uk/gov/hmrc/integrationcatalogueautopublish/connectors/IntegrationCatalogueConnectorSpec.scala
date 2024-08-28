@@ -46,6 +46,7 @@ class IntegrationCatalogueConnectorSpec
           .withHeader("Content-Type", equalTo("application/json"))
           .withHeader("Accept", equalTo("application/json"))
           .withHeader("Authorization", equalTo(internalAuthToken))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
           .withRequestBody(
             equalToJson(Json.toJson(publishRequest).toString())
           )
@@ -55,7 +56,7 @@ class IntegrationCatalogueConnectorSpec
           )
       )
 
-      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+      buildConnector().publishApi(id, oas, correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Right(())
       }
@@ -75,7 +76,7 @@ class IntegrationCatalogueConnectorSpec
           )
       )
 
-      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+      buildConnector().publishApi(id, oas, correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Left(IntegrationCatalogueException.missingTeamLink(id))
       }
@@ -83,6 +84,7 @@ class IntegrationCatalogueConnectorSpec
 
     "must return the correct IntegrationCatalogueException when the publish request is unsuccessful" in {
       val publishResult = buildPublishResult(isSuccess = false, errors)
+      val context = Seq("id" -> id, "oas" -> oas)
 
       stubFor(
         put(urlEqualTo(s"/integration-catalogue/apis/publish"))
@@ -92,13 +94,15 @@ class IntegrationCatalogueConnectorSpec
           )
       )
 
-      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+      buildConnector().publishApi(id, oas, correlationId)(HeaderCarrier()).map {
         result =>
-          result mustBe Left(IntegrationCatalogueException.publishError(publishResult.listErrors()))
+          result mustBe Left(IntegrationCatalogueException.publishError(publishResult.listErrors(), context))
       }
     }
 
     "must return the correct IntegrationCatalogueException when an unexpected response is received" in {
+      val context = Seq("id" -> id, "oas" -> oas)
+
       stubFor(
         put(urlEqualTo(s"/integration-catalogue/apis/publish"))
           .willReturn(
@@ -107,9 +111,9 @@ class IntegrationCatalogueConnectorSpec
           )
       )
 
-      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+      buildConnector().publishApi(id, oas, correlationId)(HeaderCarrier()).map {
         result =>
-          result mustBe Left(IntegrationCatalogueException.unexpectedResponse(400))
+          result mustBe Left(IntegrationCatalogueException.unexpectedResponse(400, context))
       }
     }
 
@@ -122,9 +126,8 @@ class IntegrationCatalogueConnectorSpec
           )
       )
 
-      buildConnector().publishApi(id, oas)(HeaderCarrier()).map {
+      buildConnector().publishApi(id, oas, correlationId)(HeaderCarrier()).map {
         result =>
-          result.isLeft mustBe true
           result.left.value.issue mustBe CallError
       }
     }
@@ -155,6 +158,7 @@ object IntegrationCatalogueConnectorSpec {
   private val internalAuthToken = "test-internal-auth-token"
   private val id = "test-id"
   private val oas = "test-oas"
+  private val correlationId = "test-correlation-id"
 
   private val publishRequest = PublishRequest(Some(id), "HIP", "OAS_V3", oas, autopublish = true)
 

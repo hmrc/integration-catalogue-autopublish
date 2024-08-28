@@ -24,12 +24,16 @@ import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, IntegrationCatalogueException, MissingTeamLink}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnectorImpl,
-                                   integrationCatalogueConnector: IntegrationCatalogueConnector,
-                                   apiRepository: ApiRepository)(implicit ec: ExecutionContext) extends Logging {
+class AutopublishService @Inject()(
+  oasDiscoveryConnector: OasDiscoveryApiConnectorImpl,
+  integrationCatalogueConnector: IntegrationCatalogueConnector,
+  apiRepository: ApiRepository,
+  correlationIdProvider: CorrelationIdProvider
+)(implicit ec: ExecutionContext) extends Logging {
 
   def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
@@ -38,13 +42,15 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
         Future.sequence(deployments.map(deployment => {
           deployment.deploymentTimestamp match {
             case Some(deploymentTimestamp) =>
+              val correlationId = correlationIdProvider.provide()
+
               apiRepository.findByPublisherReference(deployment.id) flatMap {
                 case Some(api) if api.deploymentTimestamp.isBefore(deploymentTimestamp) =>
                   logger.info(s"Publishing API ${api.publisherReference} as it has been updated; deploymentTimestamp=$deploymentTimestamp")
-                  publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp))
+                  publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp), correlationId)
                 case None =>
                   logger.info(s"Publishing API ${deployment.id} as it is not in MongoDb")
-                  publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp))
+                  publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp), correlationId)
                 case _ =>
                   logger.info(s"No need to publish API ${deployment.id}")
                   Future.successful(Right(()))
@@ -59,9 +65,9 @@ class AutopublishService @Inject()(oasDiscoveryConnector: OasDiscoveryApiConnect
     }
   }
 
-  private def publishAndUpsertRepository(api: Api)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
-    oasDiscoveryConnector.oas(api.publisherReference) flatMap {
-      case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument) flatMap {
+  private def publishAndUpsertRepository(api: Api, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+    oasDiscoveryConnector.oas(api.publisherReference, correlationId) flatMap {
+      case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument, correlationId) flatMap {
         case Right(()) | Left(IntegrationCatalogueException(_, _, MissingTeamLink)) =>
           try {
             apiRepository.upsert(api).flatMap(updated => {

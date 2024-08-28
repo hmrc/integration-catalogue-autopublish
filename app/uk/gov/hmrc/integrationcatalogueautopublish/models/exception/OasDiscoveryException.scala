@@ -23,7 +23,6 @@ sealed trait OasDiscoveryIssue
 case object OasDiscoveryUnexpectedResponse extends OasDiscoveryIssue
 case object OasDiscoveryCallError extends OasDiscoveryIssue
 
-
 case class OasDiscoveryException(message: String, cause: Throwable, issue: OasDiscoveryIssue) extends AutopublishException(message, cause)
 
 object OasDiscoveryException {
@@ -32,16 +31,23 @@ object OasDiscoveryException {
     OasDiscoveryException(message, null, issue)
   }
 
-  def unexpectedResponse(statusCode: Int): OasDiscoveryException = {
-    OasDiscoveryException(s"Unexpected response $statusCode returned from OAS Discovery API", OasDiscoveryUnexpectedResponse)
+  def unexpectedResponse(statusCode: Int, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+    OasDiscoveryException(
+      AutopublishException.addContext(s"Unexpected response $statusCode returned from OAS Discovery API", context),
+      OasDiscoveryUnexpectedResponse
+    )
   }
 
-  def unexpectedResponse(response: UpstreamErrorResponse): OasDiscoveryException = {
-    unexpectedResponse(response.statusCode)
+  def unexpectedResponse(response: UpstreamErrorResponse, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+    unexpectedResponse(response.statusCode, context)
   }
 
-  def error(throwable: Throwable): OasDiscoveryException = {
-    OasDiscoveryException("Error calling OAS Discovery API", throwable, OasDiscoveryCallError)
+  def error(throwable: Throwable, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+    OasDiscoveryException(
+      AutopublishException.addContext("Error calling OAS Discovery API", context),
+      throwable,
+      OasDiscoveryCallError
+    )
   }
 
 }
