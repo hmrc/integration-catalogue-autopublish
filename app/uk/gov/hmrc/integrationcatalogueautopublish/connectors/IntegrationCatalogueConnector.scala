@@ -43,12 +43,16 @@ class IntegrationCatalogueConnector @Inject()(
 
   private val integrationCatalogueBaseUrl = servicesConfig.baseUrl("integration-catalogue")
   private val clientAuthToken = appConfig.internalAuthToken
+  private val correlationIdHeaderName = "X-Correlation-Id"
 
-  def publishApi(id: String, oas: String)(implicit hc: HeaderCarrier): Future[Either[IntegrationCatalogueException, Unit]] = {
+  def publishApi(id: String, oas: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[IntegrationCatalogueException, Unit]] = {
+    val context = Seq("id" -> id, "oas" -> oas)
+
     httpClient.put(url"$integrationCatalogueBaseUrl/integration-catalogue/apis/publish")
       .setHeader(CONTENT_TYPE -> JSON)
       .setHeader(ACCEPT -> JSON)
       .setHeader(AUTHORIZATION -> clientAuthToken)
+      .setHeader(correlationIdHeaderName -> correlationId)
       .withBody(Json.toJson(PublishRequest(id, oas)))
       .execute[Either[UpstreamErrorResponse, PublishResult]]
       .map {
@@ -61,11 +65,11 @@ class IntegrationCatalogueConnector @Inject()(
             case PublishResult(false, errors) if errors.exists(_.code.equals(ErrorCodes.MISSING_TEAM_LINK)) =>
               Left(raiseIntegrationCatalogueException.missingTeamLink(id))
             case _ =>
-              Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors()))
+              Left(raiseIntegrationCatalogueException.publishError(publishResult.listErrors(), context))
           }
-        case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e))
+        case Left(e) => Left(raiseIntegrationCatalogueException.unexpectedResponse(e, context))
       }.recover {
-      case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable))
+      case NonFatal(throwable) => Left(raiseIntegrationCatalogueException.error(throwable, context))
     }
   }
 

@@ -24,16 +24,16 @@ trait ExceptionRaising {
 
   object raiseIntegrationCatalogueException {
 
-    def unexpectedResponse(response: UpstreamErrorResponse): IntegrationCatalogueException = {
-      log(IntegrationCatalogueException.unexpectedResponse(response))
+    def unexpectedResponse(response: UpstreamErrorResponse, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+      log(IntegrationCatalogueException.unexpectedResponse(response, context))
     }
 
-    def error(throwable: Throwable): IntegrationCatalogueException = {
-      log(IntegrationCatalogueException.error(throwable))
+    def error(throwable: Throwable, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+      log(IntegrationCatalogueException.error(throwable, context))
     }
 
-    def publishError(error: String): IntegrationCatalogueException = {
-      log(IntegrationCatalogueException.publishError(error))
+    def publishError(error: String, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+      log(IntegrationCatalogueException.publishError(error, context))
     }
 
     def missingTeamLink(id: String): IntegrationCatalogueException = {
@@ -43,16 +43,16 @@ trait ExceptionRaising {
 
   object raiseOasDiscoveryException {
 
-    def unexpectedResponse(statusCode: Int): OasDiscoveryException = {
-      log(OasDiscoveryException.unexpectedResponse(statusCode))
+    def unexpectedResponse(statusCode: Int, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+      log(OasDiscoveryException.unexpectedResponse(statusCode, context))
     }
 
-    def unexpectedResponse(response: UpstreamErrorResponse): OasDiscoveryException = {
-      log(OasDiscoveryException.unexpectedResponse(response))
+    def unexpectedResponse(response: UpstreamErrorResponse, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+      log(OasDiscoveryException.unexpectedResponse(response, context))
     }
 
-    def error(throwable: Throwable): OasDiscoveryException = {
-      log(OasDiscoveryException.error(throwable))
+    def error(throwable: Throwable, context: Seq[(String, AnyRef)]): OasDiscoveryException = {
+      log(OasDiscoveryException.error(throwable, context))
     }
 
   }

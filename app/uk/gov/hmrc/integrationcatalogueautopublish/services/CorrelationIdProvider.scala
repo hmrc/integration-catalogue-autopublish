@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.integrationcatalogueautopublish.models.exception
+package uk.gov.hmrc.integrationcatalogueautopublish.services
 
-abstract class AutopublishException(message: String, cause: Throwable) extends RuntimeException(message, cause)
+import com.google.inject.{Inject, Singleton}
 
-object AutopublishException {
+import java.util.UUID
 
-  def addContext(message: String, context: Seq[(String, AnyRef)]): String = {
-    val contextMessage = context.map(value => s"${value._1}=${value._2}").mkString("; ")
-    s"$message $contextMessage".trim
+@Singleton
+class CorrelationIdProvider @Inject() {
+
+  def provide(): String = {
+    UUID.randomUUID().toString
   }
 
 }

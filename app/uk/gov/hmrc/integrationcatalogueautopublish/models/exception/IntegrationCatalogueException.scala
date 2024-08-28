@@ -33,20 +33,30 @@ object IntegrationCatalogueException {
     IntegrationCatalogueException(message, null, issue)
   }
 
-  def unexpectedResponse(statusCode: Int): IntegrationCatalogueException = {
-    IntegrationCatalogueException(s"Unexpected response $statusCode returned from Integration Catalogue", UnexpectedResponse)
+  def unexpectedResponse(statusCode: Int, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+    IntegrationCatalogueException(
+      AutopublishException.addContext(s"Unexpected response $statusCode returned from Integration Catalogue", context),
+      UnexpectedResponse
+    )
   }
 
-  def unexpectedResponse(response: UpstreamErrorResponse): IntegrationCatalogueException = {
-    unexpectedResponse(response.statusCode)
+  def unexpectedResponse(response: UpstreamErrorResponse, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+    unexpectedResponse(response.statusCode, context)
   }
 
-  def error(throwable: Throwable): IntegrationCatalogueException = {
-    IntegrationCatalogueException("Error calling Integration Catalogue", throwable, CallError)
+  def error(throwable: Throwable, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+    IntegrationCatalogueException(
+      AutopublishException.addContext("Error calling Integration Catalogue", context),
+      throwable,
+      CallError
+    )
   }
 
-  def publishError(error: String): IntegrationCatalogueException = {
-    IntegrationCatalogueException(s"Publish error: $error", PublishError)
+  def publishError(error: String, context: Seq[(String, AnyRef)]): IntegrationCatalogueException = {
+    IntegrationCatalogueException(
+      AutopublishException.addContext(s"Publish error: $error", context),
+      PublishError
+    )
   }
 
   def missingTeamLink(id: String): IntegrationCatalogueException = {

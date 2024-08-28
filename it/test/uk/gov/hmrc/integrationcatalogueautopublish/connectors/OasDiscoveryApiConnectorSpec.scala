@@ -88,7 +88,7 @@ class OasDiscoveryApiConnectorSpec
 
       buildConnector().allDeployments()(HeaderCarrier()).map {
         result =>
-          result mustBe Left(OasDiscoveryException.unexpectedResponse(400))
+          result mustBe Left(OasDiscoveryException.unexpectedResponse(400, Seq.empty))
       }
     }
 
@@ -115,13 +115,14 @@ class OasDiscoveryApiConnectorSpec
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
           .withHeader("Accept", equalTo("application/yaml"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
           .willReturn(
             aResponse()
               .withBody(oas)
           )
       )
 
-      buildConnector().oas(id)(HeaderCarrier()).map {
+      buildConnector().oas(id, correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Right(oas)
       }
@@ -133,19 +134,22 @@ class OasDiscoveryApiConnectorSpec
           .withHeader("Accept", equalTo("application/yaml"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .withHeader("x-api-key", equalTo(apiKey))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
           .willReturn(
             aResponse()
               .withBody(oas)
           )
       )
 
-      buildConnector(Some(apiKey)).oas(id)(HeaderCarrier()).map {
+      buildConnector(Some(apiKey)).oas(id, correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Right(oas)
       }
     }
 
     "must return the correct OasDiscoveryException when an unexpected response is received" in {
+      val context = Seq("id" -> id)
+
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
           .willReturn(
@@ -154,9 +158,9 @@ class OasDiscoveryApiConnectorSpec
           )
       )
 
-      buildConnector().oas(id)(HeaderCarrier()).map {
+      buildConnector().oas(id, correlationId)(HeaderCarrier()).map {
         result =>
-          result mustBe Left(OasDiscoveryException.unexpectedResponse(400))
+          result mustBe Left(OasDiscoveryException.unexpectedResponse(400, context))
       }
     }
 
@@ -169,9 +173,8 @@ class OasDiscoveryApiConnectorSpec
           )
       )
 
-      buildConnector().oas(id)(HeaderCarrier()).map {
+      buildConnector().oas(id, correlationId)(HeaderCarrier()).map {
         result =>
-          result.isLeft mustBe true
           result.left.value.issue mustBe OasDiscoveryCallError
       }
     }
@@ -206,6 +209,7 @@ object OasDiscoveryApiConnectorSpec {
   private val apiKey = "test-api-key-for-ebridge"
   private val id = "test-id"
   private val oas = "test-oas"
+  private val correlationId = "test-correlation-id"
   private val testClientId = "test-client-id"
   private val testSecret = "test-secret"
   private val oasDiscoveryAuth = s"Basic ${Base64.getEncoder.encodeToString(s"$testClientId:$testSecret".getBytes("UTF-8"))}"

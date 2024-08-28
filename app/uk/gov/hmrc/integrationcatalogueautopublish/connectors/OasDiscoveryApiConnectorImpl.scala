@@ -39,7 +39,11 @@ class OasDiscoveryApiConnectorImpl @Inject()(
                                           httpClient: HttpClientV2
                                         )(implicit ec: ExecutionContext) extends OasDiscoveryApiConnector with Logging with ExceptionRaising with HttpErrorFunctions {
 
+  private val correlationIdHeaderName = "X-Correlation-Id"
+
   override def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]] = {
+    val context = Seq.empty
+
     httpClient.get(url"$baseUrl/v1/oas-deployments")
       .setHeader(ACCEPT -> JSON)
       .setHeader(AUTHORIZATION -> authorization)
@@ -47,21 +51,23 @@ class OasDiscoveryApiConnectorImpl @Inject()(
       .withProxy
       .execute[Either[UpstreamErrorResponse, Seq[ApiDeployment]]]
       .map {
-        case Right(apiDeployments) => {
+        case Right(apiDeployments) =>
           logger.info(s"Retrieved deployments: ${Json.toJson(apiDeployments)}")
           Right(apiDeployments)
-        }
-        case Left(e) => Left(raiseOasDiscoveryException.unexpectedResponse(e))
+        case Left(e) => Left(raiseOasDiscoveryException.unexpectedResponse(e, context))
       }.recover {
-      case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable))
+      case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable, context))
     }
   }
 
-  override def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]] = {
+  override def oas(id: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]] = {
+    val context = Seq("id" -> id)
+
     httpClient.get(url"$baseUrl/v1/oas-deployments/$id/oas")
       .setHeader(ACCEPT -> "application/yaml")
       .setHeader(AUTHORIZATION -> authorization)
       .setHeader(apiKeyHeader*)
+      .setHeader(correlationIdHeaderName -> correlationId)
       .withProxy
       .execute[HttpResponse]
       .map(
@@ -71,11 +77,11 @@ class OasDiscoveryApiConnectorImpl @Inject()(
             Right(response.body)
           }
           else {
-            Left(raiseOasDiscoveryException.unexpectedResponse(response.status))
+            Left(raiseOasDiscoveryException.unexpectedResponse(response.status, context))
           }
       )
       .recover {
-        case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable))
+        case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable, context))
       }
   }
 

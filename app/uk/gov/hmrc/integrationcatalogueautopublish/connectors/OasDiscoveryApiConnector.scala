@@ -26,5 +26,6 @@ trait OasDiscoveryApiConnector {
 
   def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]]
 
-  def oas(id: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]]
+  def oas(id: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]]
+  
 }
