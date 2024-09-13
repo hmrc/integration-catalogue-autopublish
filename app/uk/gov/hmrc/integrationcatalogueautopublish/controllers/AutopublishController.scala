@@ -25,14 +25,12 @@ import scala.concurrent.ExecutionContext
 
 class AutopublishController @Inject()(
   cc: ControllerComponents,
-  autopublishService: AutopublishService,
-  correlationIdProvider: CorrelationIdProvider
+  autopublishService: AutopublishService
 )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def autopublishNow(): Action[AnyContent] = Action.async {
     implicit request: Request[AnyContent] =>
-      val correlationId = correlationIdProvider.provide()
-      autopublishService.autopublish(correlationId).map {
+      autopublishService.autopublish().map {
         case Right(_) => NoContent
         case Left(e) => throw e
       }

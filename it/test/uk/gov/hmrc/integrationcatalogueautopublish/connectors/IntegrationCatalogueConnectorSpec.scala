@@ -84,7 +84,7 @@ class IntegrationCatalogueConnectorSpec
 
     "must return the correct IntegrationCatalogueException when the publish request is unsuccessful" in {
       val publishResult = buildPublishResult(isSuccess = false, errors)
-      val context = Seq("id" -> id, "oas" -> oas)
+      val context = Seq("id" -> id, "oas" -> oas, "X-Correlation-Id" -> correlationId)
 
       stubFor(
         put(urlEqualTo(s"/integration-catalogue/apis/publish"))
@@ -101,7 +101,7 @@ class IntegrationCatalogueConnectorSpec
     }
 
     "must return the correct IntegrationCatalogueException when an unexpected response is received" in {
-      val context = Seq("id" -> id, "oas" -> oas)
+      val context = Seq("id" -> id, "oas" -> oas, "X-Correlation-Id" -> correlationId)
 
       stubFor(
         put(urlEqualTo(s"/integration-catalogue/apis/publish"))

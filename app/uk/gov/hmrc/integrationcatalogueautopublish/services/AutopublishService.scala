@@ -34,15 +34,14 @@ class AutopublishService @Inject()(
   correlationIdProvider: CorrelationIdProvider
 )(implicit ec: ExecutionContext) extends Logging {
 
-  def autopublish(correlationId: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+  def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
+    val correlationId = correlationIdProvider.provide()
     oasDiscoveryConnector.allDeployments(correlationId) flatMap {
       case Right(deployments) =>
         Future.sequence(deployments.map(deployment => {
           deployment.deploymentTimestamp match {
             case Some(deploymentTimestamp) =>
-              val correlationId = correlationIdProvider.provide()
-
               apiRepository.findByPublisherReference(deployment.id) flatMap {
                 case Some(api) if api.deploymentTimestamp.isBefore(deploymentTimestamp) =>
                   logger.info(s"Publishing API ${api.publisherReference} as it has been updated; deploymentTimestamp=$deploymentTimestamp")
