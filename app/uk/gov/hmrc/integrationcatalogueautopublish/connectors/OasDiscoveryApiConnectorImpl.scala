@@ -41,13 +41,14 @@ class OasDiscoveryApiConnectorImpl @Inject()(
 
   private val correlationIdHeaderName = "X-Correlation-Id"
 
-  override def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]] = {
-    val context = Seq.empty
+  override def allDeployments(correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]] = {
+    val context = Seq(correlationIdHeaderName -> correlationId)
 
     httpClient.get(url"$baseUrl/v1/oas-deployments")
       .setHeader(ACCEPT -> JSON)
       .setHeader(AUTHORIZATION -> authorization)
       .setHeader(apiKeyHeader*)
+      .setHeader(correlationIdHeaderName -> correlationId)
       .withProxy
       .execute[Either[UpstreamErrorResponse, Seq[ApiDeployment]]]
       .map {
@@ -61,7 +62,10 @@ class OasDiscoveryApiConnectorImpl @Inject()(
   }
 
   override def oas(id: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]] = {
-    val context = Seq("id" -> id)
+    val context = Seq(
+      "id" -> id,
+      correlationIdHeaderName -> correlationId
+    )
 
     httpClient.get(url"$baseUrl/v1/oas-deployments/$id/oas")
       .setHeader(ACCEPT -> "application/yaml")

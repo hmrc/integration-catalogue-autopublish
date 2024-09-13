@@ -41,9 +41,9 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       val fixture = buildFixture()
       val exception = OasDiscoveryException.unexpectedResponse(500, Seq.empty)
 
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Left(exception)))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Left(exception)))
 
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map(result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map(result => {
         verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
         verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
         verify(fixture.apiRepository, never()).upsert(any)
@@ -53,8 +53,8 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
 
     "must handle no deployments" in {
       val fixture = buildFixture()
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq.empty)))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq.empty)))
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
         verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
         verify(fixture.apiRepository, never()).upsert(any)
@@ -65,9 +65,9 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
     "must do nothing when the deployments are unchanged" in {
       val fixture = buildFixture()
       val now = Instant.now
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, Some(now))))))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, Some(now))))))
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(Api(Some(mongoId), testId, now))))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
         verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
         verify(fixture.apiRepository, never()).upsert(any)
@@ -81,7 +81,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       val earlier = now.minus(1, ChronoUnit.DAYS)
       val deployment = ApiDeployment(testId, Some(now))
 
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq(deployment))))
 
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
@@ -92,7 +92,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.apiRepository.upsert(updatedApi)).thenReturn(Future.successful(updatedApi))
       when(fixture.integrationCatalogueConnector.publishApi(eqTo(testId), eqTo("some oas"), eqTo(correlationId))(any)).thenReturn(Future.successful(Right(())))
 
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.integrationCatalogueConnector).publishApi(eqTo(testId), eqTo( "some oas"), eqTo(correlationId))(any)
         verify(fixture.apiRepository).upsert(updatedApi)
         result must be(Right(()))
@@ -105,7 +105,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       val earlier = now.minus(1, ChronoUnit.DAYS)
 
       val deployment = ApiDeployment(testId, Some(now))
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq(deployment))))
 
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
@@ -116,7 +116,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.integrationCatalogueConnector.publishApi(eqTo(testId), eqTo("some oas"), eqTo(correlationId))(any))
         .thenReturn(Future.successful(Left(IntegrationCatalogueException.missingTeamLink(testId))))
 
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.apiRepository).upsert(updatedApi)
         result must be(Right(()))
       })
@@ -129,7 +129,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       val oas = "some oas"
       val context = Seq("id" -> testId, "oas" -> oas)
 
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, Some(now))))))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq(ApiDeployment(testId, Some(now))))))
 
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(api)))
@@ -137,7 +137,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.apiRepository.upsert(api)).thenReturn(Future.successful(api.copy(deploymentTimestamp = now)))
       when(fixture.integrationCatalogueConnector.publishApi(eqTo(testId), eqTo(oas), eqTo(correlationId))(any)).thenReturn(Future.successful(Left(IntegrationCatalogueException.unexpectedResponse(500, context))))
 
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.integrationCatalogueConnector).publishApi(eqTo(testId), eqTo("some oas"), eqTo(correlationId))(any)
         verify(fixture.apiRepository, never()).upsert(any)
         result must be(Right(()))
@@ -149,7 +149,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       val now = Instant.now
       val earlier = now.minus(1, ChronoUnit.DAYS)
       val deployment = ApiDeployment(testId, Some(now))
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(Seq(deployment))))
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(Seq(deployment))))
 
       val api = Api(Some(mongoId), testId, earlier)
       when(fixture.apiRepository.findByPublisherReference(any)).thenReturn(Future.successful(Some(api)))
@@ -159,7 +159,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       when(fixture.apiRepository.upsert(updatedApi)).thenThrow(new RuntimeException("bang"))
       when(fixture.integrationCatalogueConnector.publishApi(any, any, any)(any)).thenReturn(Future.successful(Right(())))
 
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.apiRepository).upsert(updatedApi)
         result must be(Right(()))
       })
@@ -168,8 +168,8 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
     "must ignore deployments without a timestamp" in {
       val fixture = buildFixture()
       val deployments = Seq(ApiDeployment("test-id", None))
-      when(fixture.oasDiscoveryApiConnector.allDeployments()(any)).thenReturn(Future.successful(Right(deployments)))
-      fixture.autopublishService.autopublish()(new HeaderCarrier()) map (result => {
+      when(fixture.oasDiscoveryApiConnector.allDeployments(eqTo(correlationId))(any)).thenReturn(Future.successful(Right(deployments)))
+      fixture.autopublishService.autopublish(correlationId)(new HeaderCarrier()).map (result => {
         verify(fixture.apiRepository, never()).findByPublisherReference(any)
         result must be(Right(()))
       })
@@ -189,7 +189,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
     val oasDiscoveryApiConnector = mock[OasDiscoveryApiConnectorImpl]
 
     val correlationIdProvider = mock[CorrelationIdProvider]
-    when(correlationIdProvider.provide()).thenReturn(correlationId)
+    when(correlationIdProvider.provide()(any)).thenReturn(correlationId)
 
     val autopublishService = new AutopublishService(oasDiscoveryApiConnector, integrationCatalogueConnector, apiRepository, correlationIdProvider)
     Fixture(apiRepository, integrationCatalogueConnector, oasDiscoveryApiConnector, autopublishService)

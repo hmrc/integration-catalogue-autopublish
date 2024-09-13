@@ -18,21 +18,24 @@ package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
+import uk.gov.hmrc.integrationcatalogueautopublish.services.{AutopublishService, CorrelationIdProvider}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 class AutopublishController @Inject()(
   cc: ControllerComponents,
-  autopublishService: AutopublishService
+  autopublishService: AutopublishService,
+  correlationIdProvider: CorrelationIdProvider
 )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def autopublishNow(): Action[AnyContent] = Action.async {
-    implicit request: Request[AnyContent] => autopublishService.autopublish().map {
-      case Right(_) => NoContent
-      case Left(e) => throw e
-    }
+    implicit request: Request[AnyContent] =>
+      val correlationId = correlationIdProvider.provide()
+      autopublishService.autopublish(correlationId).map {
+        case Right(_) => NoContent
+        case Left(e) => throw e
+      }
   }
 
 }

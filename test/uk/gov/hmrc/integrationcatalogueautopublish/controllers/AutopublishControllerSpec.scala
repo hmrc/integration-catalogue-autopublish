@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
@@ -43,14 +43,14 @@ class AutopublishControllerSpec
     "must call the service layer and return 204 No Content on success" in {
       val fixture = buildFixture()
 
-      when(fixture.autopublishService.autopublish()(any)).thenReturn(Future.successful(Right(())))
+      when(fixture.autopublishService.autopublish(any)(any)).thenReturn(Future.successful(Right(())))
 
       running(fixture.application) {
         val request = FakeRequest(routes.AutopublishController.autopublishNow())
         val result = route(fixture.application, request).value
 
         status(result) mustBe NO_CONTENT
-        verify(fixture.autopublishService).autopublish()(any)
+        verify(fixture.autopublishService).autopublish(any)(any)
       }
     }
 
@@ -58,7 +58,7 @@ class AutopublishControllerSpec
       val fixture = buildFixture()
       val ex = new AutopublishException("test-message", null) {}
 
-      when(fixture.autopublishService.autopublish()(any)).thenReturn(Future.successful(Left(ex)))
+      when(fixture.autopublishService.autopublish(any)(any)).thenReturn(Future.successful(Left(ex)))
 
       running(fixture.application) {
         val request = FakeRequest(routes.AutopublishController.autopublishNow())

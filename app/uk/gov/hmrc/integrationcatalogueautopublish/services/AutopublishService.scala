@@ -34,9 +34,9 @@ class AutopublishService @Inject()(
   correlationIdProvider: CorrelationIdProvider
 )(implicit ec: ExecutionContext) extends Logging {
 
-  def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+  def autopublish(correlationId: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
-    oasDiscoveryConnector.allDeployments() flatMap {
+    oasDiscoveryConnector.allDeployments(correlationId) flatMap {
       case Right(deployments) =>
         Future.sequence(deployments.map(deployment => {
           deployment.deploymentTimestamp match {

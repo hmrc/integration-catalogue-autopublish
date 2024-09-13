@@ -21,7 +21,7 @@ import org.apache.pekko.actor.ActorSystem
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
+import uk.gov.hmrc.integrationcatalogueautopublish.services.{AutopublishService, CorrelationIdProvider}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -31,7 +31,8 @@ import scala.util.control.NonFatal
 class AutopublishTask @Inject()(
   actorSystem: ActorSystem,
   appConfig: AppConfig,
-  autopublishService: AutopublishService
+  autopublishService: AutopublishService,
+  correlationIdProvider: CorrelationIdProvider
 )(implicit ec: ExecutionContext) extends Logging {
 
   if (appConfig.autopublishTaskInitialDelay.length > 0 && appConfig.autopublishTaskInterval.length > 0) {
@@ -43,7 +44,9 @@ class AutopublishTask @Inject()(
     ) {
       () =>
         try {
-          autopublishService.autopublish()(HeaderCarrier())
+          val hc = HeaderCarrier()
+          val correlationId = correlationIdProvider.provide()(using hc)
+          autopublishService.autopublish(correlationId)(hc)
         }
         catch {
           case NonFatal(e) => logger.error("Exception thrown by autopublish service", e)

@@ -24,7 +24,7 @@ import scala.concurrent.Future
 
 trait OasDiscoveryApiConnector {
 
-  def allDeployments()(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]]
+  def allDeployments(correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]]
 
   def oas(id: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]]
   

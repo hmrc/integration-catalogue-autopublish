@@ -17,14 +17,17 @@
 package uk.gov.hmrc.integrationcatalogueautopublish.services
 
 import com.google.inject.{Inject, Singleton}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.UUID
 
 @Singleton
 class CorrelationIdProvider @Inject() {
 
-  def provide(): String = {
-    UUID.randomUUID().toString
+  def provide()(implicit hc: HeaderCarrier): String = {
+    hc.otherHeaders.find { case (key, _) => key.equalsIgnoreCase("X-Correlation-Id") }
+      .map { case (_, value) => value }
+      .getOrElse(UUID.randomUUID().toString)
   }
 
 }
