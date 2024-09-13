@@ -21,7 +21,7 @@ import org.apache.pekko.actor.ActorSystem
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.config.AppConfig
-import uk.gov.hmrc.integrationcatalogueautopublish.services.{AutopublishService, CorrelationIdProvider}
+import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{Duration, FiniteDuration}

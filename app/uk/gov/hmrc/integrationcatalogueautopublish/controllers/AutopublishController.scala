@@ -18,7 +18,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import uk.gov.hmrc.integrationcatalogueautopublish.services.{AutopublishService, CorrelationIdProvider}
+import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
