@@ -46,7 +46,7 @@ class IntegrationCatalogueConnector @Inject()(
   private val correlationIdHeaderName = "X-Correlation-Id"
 
   def publishApi(id: String, oas: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[IntegrationCatalogueException, Unit]] = {
-    val context = Seq("id" -> id, "oas" -> oas)
+    val context = Seq("id" -> id, "oas" -> oas, correlationIdHeaderName -> correlationId)
 
     httpClient.put(url"$integrationCatalogueBaseUrl/integration-catalogue/apis/publish")
       .setHeader(CONTENT_TYPE -> JSON)

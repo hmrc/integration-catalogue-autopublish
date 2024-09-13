@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec

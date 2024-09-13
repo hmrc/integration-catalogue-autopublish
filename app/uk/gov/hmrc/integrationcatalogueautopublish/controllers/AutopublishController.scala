@@ -29,10 +29,11 @@ class AutopublishController @Inject()(
 )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def autopublishNow(): Action[AnyContent] = Action.async {
-    implicit request: Request[AnyContent] => autopublishService.autopublish().map {
-      case Right(_) => NoContent
-      case Left(e) => throw e
-    }
+    implicit request: Request[AnyContent] =>
+      autopublishService.autopublish().map {
+        case Right(_) => NoContent
+        case Left(e) => throw e
+      }
   }
 
 }

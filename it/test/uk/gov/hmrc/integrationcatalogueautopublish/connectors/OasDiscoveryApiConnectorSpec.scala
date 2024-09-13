@@ -41,19 +41,22 @@ class OasDiscoveryApiConnectorSpec
 
   import OasDiscoveryApiConnectorSpec._
 
+  private val correlationId = "test-correlation-id"
+
   "allDeployments" - {
     "must place the correct request to Oas Discovery Api and return deployments" in {
       stubFor(
         get(urlEqualTo("/v1/oas-deployments"))
           .withHeader("Accept", equalTo("application/json"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
+          .withHeader("X-Correlation-Id", equalTo(correlationId))
           .willReturn(
             aResponse()
               .withBody(Json.toJson(someDeployments).toString())
           )
       )
 
-      buildConnector().allDeployments()(HeaderCarrier()).map {
+      buildConnector().allDeployments(correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Right(someDeployments)
       }
@@ -65,19 +68,22 @@ class OasDiscoveryApiConnectorSpec
           .withHeader("Accept", equalTo("application/json"))
           .withHeader("Authorization", equalTo(oasDiscoveryAuth))
           .withHeader("x-api-key", equalTo(apiKey))
+          .withHeader("X-Correlation-Id", equalTo(correlationId))
           .willReturn(
             aResponse()
               .withBody(Json.toJson(someDeployments).toString())
           )
       )
 
-      buildConnector(Some(apiKey)).allDeployments()(HeaderCarrier()).map {
+      buildConnector(Some(apiKey)).allDeployments(correlationId)(HeaderCarrier()).map {
         result =>
           result mustBe Right(someDeployments)
       }
     }
 
     "must return the correct OasDiscoveryException when an unexpected response is received" in {
+      val context = Seq("X-Correlation-Id" -> correlationId)
+
       stubFor(
         get(urlEqualTo("/v1/oas-deployments"))
           .willReturn(
@@ -86,9 +92,9 @@ class OasDiscoveryApiConnectorSpec
           )
       )
 
-      buildConnector().allDeployments()(HeaderCarrier()).map {
+      buildConnector().allDeployments(correlationId)(HeaderCarrier()).map {
         result =>
-          result mustBe Left(OasDiscoveryException.unexpectedResponse(400, Seq.empty))
+          result mustBe Left(OasDiscoveryException.unexpectedResponse(400, context))
       }
     }
 
@@ -101,7 +107,7 @@ class OasDiscoveryApiConnectorSpec
           )
       )
 
-      buildConnector().allDeployments()(HeaderCarrier()).map {
+      buildConnector().allDeployments(correlationId)(HeaderCarrier()).map {
         result =>
           result.isLeft mustBe true
           result.left.value.issue mustBe OasDiscoveryCallError
@@ -148,7 +154,7 @@ class OasDiscoveryApiConnectorSpec
     }
 
     "must return the correct OasDiscoveryException when an unexpected response is received" in {
-      val context = Seq("id" -> id)
+      val context = Seq("id" -> id, "X-Correlation-Id" -> correlationId)
 
       stubFor(
         get(urlEqualTo(s"/v1/oas-deployments/$id/oas"))
