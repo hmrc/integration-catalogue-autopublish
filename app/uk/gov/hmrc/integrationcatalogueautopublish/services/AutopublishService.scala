@@ -63,6 +63,37 @@ class AutopublishService @Inject()(
     }
   }
 
+  def autopublishOne(publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
+    logger.info(s"Starting auto-publish of $publisherReference")
+    oasDiscoveryConnector.deployment(correlationIdProvider.provide(), publisherReference) flatMap {
+      case Right(Some(deployment)) =>
+          deployment.deploymentTimestamp match {
+            case Some(deploymentTimestamp) =>
+              val correlationId = correlationIdProvider.provide()
+              apiRepository.findByPublisherReference(deployment.id) flatMap {
+                case Some(api) if api.deploymentTimestamp.isBefore(deploymentTimestamp) =>
+                  logger.info(s"Publishing API ${api.publisherReference} as it has been updated; deploymentTimestamp=$deploymentTimestamp")
+                  publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp), correlationId)
+                    .flatMap(_ => Future.successful(Right(())))
+                case None =>
+                  logger.info(s"Publishing API ${deployment.id} as it is not in MongoDb")
+                  publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp), correlationId)
+                    .flatMap(_ => Future.successful(Right(())))
+                case _ =>
+                  logger.info(s"No need to publish API ${deployment.id}")
+                  Future.successful(Right(()))
+              }
+            case _ =>
+              logger.info(s"Ignoring API ${deployment.id} as it has no deployment timestamp")
+              Future.successful(Right(()))
+          }
+      case Right(None) =>
+        logger.info(s"Deployment with publisher reference '$publisherReference' not found.")
+        Future.successful(Right(()))
+      case Left(e) => Future.successful(Left(e))
+    }
+  }
+
   private def publishAndUpsertRepository(api: Api, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     oasDiscoveryConnector.oas(api.publisherReference, correlationId) flatMap {
       case Right(oasDocument) => integrationCatalogueConnector.publishApi(api.publisherReference, oasDocument, correlationId) flatMap {

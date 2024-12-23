@@ -69,6 +69,37 @@ class AutopublishControllerSpec
     }
   }
 
+  "autopublishOne" - {
+    val publisherReference = "publisher-reference"
+    "must call the service layer and return 204 No Content on success" in {
+      val fixture = buildFixture()
+
+      when(fixture.autopublishService.autopublishOne(eqTo(publisherReference))(any)).thenReturn(Future.successful(Right(())))
+
+      running(fixture.application) {
+        val request = FakeRequest(routes.AutopublishController.autopublishOne(publisherReference))
+        val result = route(fixture.application, request).value
+
+        status(result) mustBe NO_CONTENT
+        verify(fixture.autopublishService).autopublishOne(eqTo(publisherReference))(any)
+      }
+    }
+
+    "must throw any exception returned by the service layer" in {
+      val fixture = buildFixture()
+      val ex = new AutopublishException("test-message", null) {}
+
+      when(fixture.autopublishService.autopublishOne(eqTo(publisherReference))(any)).thenReturn(Future.successful(Left(ex)))
+
+      running(fixture.application) {
+        val request = FakeRequest(routes.AutopublishController.autopublishOne(publisherReference))
+        val result = route(fixture.application, request).value
+
+        the [AutopublishException] thrownBy await(result) mustBe ex
+      }
+    }
+  }
+
   private case class Fixture(application: Application, autopublishService: AutopublishService)
 
   private def buildFixture(): Fixture = {
