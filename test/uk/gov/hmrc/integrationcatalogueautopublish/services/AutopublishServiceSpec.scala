@@ -203,19 +203,6 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       })
     }
 
-    "must do nothing when the deployment is unchanged" in {
-      val fixture = buildFixture()
-      val now = Instant.now
-      when(fixture.oasDiscoveryApiConnector.deployment(eqTo(correlationId), eqTo(publisherReference))(any)).thenReturn(Future.successful(Right(Some(ApiDeployment(testId, Some(now))))))
-      when(fixture.apiRepository.findByPublisherReference(testId)).thenReturn(Future.successful(Some(Api(Some(mongoId), testId, now))))
-      fixture.autopublishService.autopublishOne(publisherReference)(new HeaderCarrier()).map(result => {
-        verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
-        verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
-        verify(fixture.apiRepository, never()).upsert(any)
-        result must be(Right(()))
-      })
-    }
-
     "must publish new oas file and update repository when a deployment has changed" in {
       val fixture = buildFixture()
       val now = Instant.now

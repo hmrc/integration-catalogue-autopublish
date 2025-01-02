@@ -71,7 +71,7 @@ class AutopublishService @Inject()(
             case Some(deploymentTimestamp) =>
               val correlationId = correlationIdProvider.provide()
               apiRepository.findByPublisherReference(deployment.id) flatMap {
-                case Some(api) if api.deploymentTimestamp.isBefore(deploymentTimestamp) =>
+                case Some(api) =>
                   logger.info(s"Publishing API ${api.publisherReference} as it has been updated; deploymentTimestamp=$deploymentTimestamp")
                   publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp), correlationId)
                     .flatMap(_ => Future.successful(Right(())))
@@ -79,9 +79,6 @@ class AutopublishService @Inject()(
                   logger.info(s"Publishing API ${deployment.id} as it is not in MongoDb")
                   publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp), correlationId)
                     .flatMap(_ => Future.successful(Right(())))
-                case _ =>
-                  logger.info(s"No need to publish API ${deployment.id}")
-                  Future.successful(Right(()))
               }
             case _ =>
               logger.info(s"Ignoring API ${deployment.id} as it has no deployment timestamp")
