@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.http.Fault
 import org.scalatest.EitherValues
 import org.scalatest.freespec.AsyncFreeSpec
@@ -182,6 +182,94 @@ class OasDiscoveryApiConnectorSpec
       buildConnector().oas(id, correlationId)(HeaderCarrier()).map {
         result =>
           result.left.value.issue mustBe OasDiscoveryCallError
+      }
+    }
+  }
+
+  "deployment" - {
+    val publisherReference = "publisher-reference"
+    "must place the correct request to Oas Discovery Api and return deployments" in {
+      stubFor(
+        get(urlEqualTo(s"/v1/oas-deployments/$publisherReference"))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
+          .withHeader("X-Correlation-Id", equalTo(correlationId))
+          .willReturn(
+            aResponse()
+              .withBody(Json.toJson(someDeployments.head).toString())
+          )
+      )
+
+      buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
+        result =>
+          result mustBe Right(someDeployments.headOption)
+      }
+    }
+
+    "must set the api key header when it is defined in config" in {
+      stubFor(
+        get(urlEqualTo(s"/v1/oas-deployments/$publisherReference"))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Authorization", equalTo(oasDiscoveryAuth))
+          .withHeader("x-api-key", equalTo(apiKey))
+          .withHeader("X-Correlation-Id", equalTo(correlationId))
+          .willReturn(
+            aResponse()
+              .withBody(Json.toJson(someDeployments.head).toString())
+          )
+      )
+
+      buildConnector(Some(apiKey)).deployment(correlationId, publisherReference)(HeaderCarrier()).map {
+        result =>
+          result mustBe Right(someDeployments.headOption)
+      }
+    }
+
+    "must return the correct OasDiscoveryException when an unexpected response is received" in {
+      val context = Seq("publisher-reference" -> publisherReference, "X-Correlation-Id" -> correlationId)
+
+      stubFor(
+        get(urlEqualTo(s"/v1/oas-deployments/$publisherReference"))
+          .willReturn(
+            aResponse()
+              .withStatus(400)
+          )
+      )
+
+      buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
+        result =>
+          result mustBe Left(OasDiscoveryException.unexpectedResponse(400, context))
+      }
+    }
+
+    "must return the correct OasDiscoveryException when an unexpected error occurs" in {
+      stubFor(
+        get(urlEqualTo(s"/v1/oas-deployments/$publisherReference"))
+          .willReturn(
+            aResponse()
+              .withFault(Fault.CONNECTION_RESET_BY_PEER)
+          )
+      )
+
+      buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
+        result =>
+          result.isLeft mustBe true
+          result.left.value.issue mustBe OasDiscoveryCallError
+      }
+    }
+
+    "must return the correct OasDiscoveryException when the deployment is not found" in {
+      stubFor(
+        get(urlEqualTo(s"/v1/oas-deployments/$publisherReference"))
+          .willReturn(
+            aResponse()
+              .withStatus(404)
+          )
+      )
+
+      buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
+        result =>
+          result.value mustBe None
       }
     }
   }

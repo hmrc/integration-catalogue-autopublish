@@ -61,6 +61,27 @@ class OasDiscoveryApiConnectorImpl @Inject()(
     }
   }
 
+  override def deployment(correlationId: String, publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Option[ApiDeployment]]] = {
+    val context = Seq("publisher-reference" -> publisherReference, correlationIdHeaderName -> correlationId)
+
+    httpClient.get(url"$baseUrl/v1/oas-deployments/$publisherReference")
+      .setHeader(ACCEPT -> JSON)
+      .setHeader(AUTHORIZATION -> authorization)
+      .setHeader(apiKeyHeader*)
+      .setHeader(correlationIdHeaderName -> correlationId)
+      .withProxy
+      .execute[Either[UpstreamErrorResponse, ApiDeployment]]
+      .map {
+        case Right(apiDeployment) =>
+          logger.info(s"Retrieved deployment: ${Json.toJson(apiDeployment)}")
+          Right(Some(apiDeployment))
+        case Left(e) if e.statusCode == 404 => Right(None)
+        case Left(e) => Left(raiseOasDiscoveryException.unexpectedResponse(e, context))
+      }.recover {
+        case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable, context))
+      }
+  }
+
   override def oas(id: String, correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, String]] = {
     val context = Seq(
       "id" -> id,

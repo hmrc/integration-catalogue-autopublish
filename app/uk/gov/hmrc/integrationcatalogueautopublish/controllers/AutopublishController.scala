@@ -18,6 +18,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.OasDiscoveryException
 import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -31,6 +32,14 @@ class AutopublishController @Inject()(
   def autopublishNow(): Action[AnyContent] = Action.async {
     implicit request: Request[AnyContent] =>
       autopublishService.autopublish().map {
+        case Right(_) => NoContent
+        case Left(e) => throw e
+      }
+  }
+
+  def autopublishOne(publisherReference: String): Action[AnyContent] = Action.async {
+    implicit request: Request[AnyContent] =>
+      autopublishService.autopublishOne(publisherReference).map {
         case Right(_) => NoContent
         case Left(e) => throw e
       }
