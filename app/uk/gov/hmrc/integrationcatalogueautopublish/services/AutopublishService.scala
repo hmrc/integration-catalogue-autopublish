@@ -21,9 +21,10 @@ import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.integrationcatalogueautopublish.connectors.{IntegrationCatalogueConnector, OasDiscoveryApiConnectorImpl}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.Api
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, IntegrationCatalogueException, MissingTeamLink}
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, ExceptionRaising, IntegrationCatalogueException, MissingTeamLink}
 import uk.gov.hmrc.integrationcatalogueautopublish.repositories.ApiRepository
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -32,7 +33,7 @@ class AutopublishService @Inject()(
   integrationCatalogueConnector: IntegrationCatalogueConnector,
   apiRepository: ApiRepository,
   correlationIdProvider: CorrelationIdProvider
-)(implicit ec: ExecutionContext) extends Logging {
+)(implicit ec: ExecutionContext) extends Logging with ExceptionRaising {
 
   def autopublish()(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info("Starting auto-publish")
@@ -65,28 +66,26 @@ class AutopublishService @Inject()(
 
   def autopublishOne(publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info(s"Starting auto-publish of $publisherReference")
-    oasDiscoveryConnector.deployment(correlationIdProvider.provide(), publisherReference) flatMap {
-      case Right(Some(deployment)) =>
-          deployment.deploymentTimestamp match {
-            case Some(deploymentTimestamp) =>
-              val correlationId = correlationIdProvider.provide()
-              apiRepository.findByPublisherReference(deployment.id) flatMap {
-                case Some(api) =>
-                  logger.info(s"Publishing API ${api.publisherReference} as it has been updated; deploymentTimestamp=$deploymentTimestamp")
-                  publishAndUpsertRepository(api.copy(deploymentTimestamp = deploymentTimestamp), correlationId)
-                    .flatMap(_ => Future.successful(Right(())))
-                case None =>
-                  logger.info(s"Publishing API ${deployment.id} as it is not in MongoDb")
-                  publishAndUpsertRepository(Api(deployment.id, deploymentTimestamp), correlationId)
-                    .flatMap(_ => Future.successful(Right(())))
-              }
-            case _ =>
-              logger.info(s"Ignoring API ${deployment.id} as it has no deployment timestamp")
-              Future.successful(Right(()))
-          }
-      case Right(None) =>
-        logger.info(s"Deployment with publisher reference '$publisherReference' not found.")
-        Future.successful(Right(()))
+    val correlationId = correlationIdProvider.provide(hc)
+
+    oasDiscoveryConnector.deployment(correlationId, publisherReference) flatMap {
+      case Right(deployment) =>
+        deployment.deploymentTimestamp match {
+          case Some(deploymentTimestamp) =>
+            apiRepository.findByPublisherReference(deployment.id) map {
+              case Some(api) =>
+                api.copy(deploymentTimestamp = deploymentTimestamp)
+              case None =>
+                logger.info(s"API $publisherReference does not exist in the apis repository")
+                Api(publisherReference, deploymentTimestamp)
+            } flatMap (
+              api =>
+                logger.info(s"Publishing API $publisherReference")
+                publishAndUpsertRepository(api, correlationId)
+            )
+          case None =>
+            Future.successful(Left(raiseOasDiscoveryException.noDeploymentTimestamp(publisherReference)))
+        }
       case Left(e) => Future.successful(Left(e))
     }
   }

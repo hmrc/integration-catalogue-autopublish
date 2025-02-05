@@ -17,6 +17,7 @@
 package uk.gov.hmrc.integrationcatalogueautopublish.services
 
 import com.google.inject.{Inject, Singleton}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.UUID
 
@@ -25,6 +26,10 @@ class CorrelationIdProvider @Inject() {
 
   def provide(): String = {
     UUID.randomUUID().toString
+  }
+
+  def provide(hc: HeaderCarrier): String = {
+    hc.requestId.map(_.value).getOrElse(provide())
   }
 
 }

@@ -26,9 +26,9 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.ControllerComponents
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.AutopublishException
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{AutopublishException, OasDiscoveryException}
 import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 
 import scala.concurrent.Future
@@ -82,6 +82,36 @@ class AutopublishControllerSpec
 
         status(result) mustBe NO_CONTENT
         verify(fixture.autopublishService).autopublishOne(eqTo(publisherReference))(any)
+      }
+    }
+
+    "must return 404 Not Found if the deployment cannot be found" in {
+      val fixture = buildFixture()
+      val exception = OasDiscoveryException.deploymentNotFound(publisherReference)
+
+      when(fixture.autopublishService.autopublishOne(eqTo(publisherReference))(any))
+        .thenReturn(Future.successful(Left(exception)))
+
+      running(fixture.application) {
+        val request = FakeRequest(routes.AutopublishController.autopublishOne(publisherReference))
+        val result = route(fixture.application, request).value
+
+        status(result) mustBe NOT_FOUND
+      }
+    }
+
+    "must return 404 Not Found if the OAS cannot be found" in {
+      val fixture = buildFixture()
+      val exception = OasDiscoveryException.oasNotFound(publisherReference)
+
+      when(fixture.autopublishService.autopublishOne(eqTo(publisherReference))(any))
+        .thenReturn(Future.successful(Left(exception)))
+
+      running(fixture.application) {
+        val request = FakeRequest(routes.AutopublishController.autopublishOne(publisherReference))
+        val result = route(fixture.application, request).value
+
+        status(result) mustBe NOT_FOUND
       }
     }
 

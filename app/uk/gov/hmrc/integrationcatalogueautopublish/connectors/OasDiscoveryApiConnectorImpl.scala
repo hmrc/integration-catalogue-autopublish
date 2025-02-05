@@ -20,12 +20,13 @@ import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.ContentTypes.JSON
 import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION}
+import play.api.http.Status.NOT_FOUND
 import play.api.libs.json.Json
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpErrorFunctions, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.integrationcatalogueautopublish.models.ApiDeployment
-import uk.gov.hmrc.integrationcatalogueautopublish.models.ApiDeployment._
+import uk.gov.hmrc.integrationcatalogueautopublish.models.ApiDeployment.*
 import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{ExceptionRaising, OasDiscoveryException}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -39,7 +40,7 @@ class OasDiscoveryApiConnectorImpl @Inject()(
                                           httpClient: HttpClientV2
                                         )(implicit ec: ExecutionContext) extends OasDiscoveryApiConnector with Logging with ExceptionRaising with HttpErrorFunctions {
 
-  private val correlationIdHeaderName = "X-Correlation-Id"
+  import OasDiscoveryApiConnectorImpl.*
 
   override def allDeployments(correlationId: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Seq[ApiDeployment]]] = {
     val context = Seq(correlationIdHeaderName -> correlationId)
@@ -61,7 +62,7 @@ class OasDiscoveryApiConnectorImpl @Inject()(
     }
   }
 
-  override def deployment(correlationId: String, publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, Option[ApiDeployment]]] = {
+  override def deployment(correlationId: String, publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[OasDiscoveryException, ApiDeployment]] = {
     val context = Seq("publisher-reference" -> publisherReference, correlationIdHeaderName -> correlationId)
 
     httpClient.get(url"$baseUrl/v1/oas-deployments/$publisherReference")
@@ -74,8 +75,8 @@ class OasDiscoveryApiConnectorImpl @Inject()(
       .map {
         case Right(apiDeployment) =>
           logger.info(s"Retrieved deployment: ${Json.toJson(apiDeployment)}")
-          Right(Some(apiDeployment))
-        case Left(e) if e.statusCode == 404 => Right(None)
+          Right(apiDeployment)
+        case Left(e) if e.statusCode == 404 => Left(raiseOasDiscoveryException.deploymentNotFound(publisherReference))
         case Left(e) => Left(raiseOasDiscoveryException.unexpectedResponse(e, context))
       }.recover {
         case NonFatal(throwable) => Left(raiseOasDiscoveryException.error(throwable, context))
@@ -100,6 +101,9 @@ class OasDiscoveryApiConnectorImpl @Inject()(
           if (is2xx(response.status)) {
             logger.info(s"Retrieved oas for id $id: ${response.body}")
             Right(response.body)
+          }
+          else if (response.status == NOT_FOUND) {
+            Left(raiseOasDiscoveryException.oasNotFound(id))
           }
           else {
             Left(raiseOasDiscoveryException.unexpectedResponse(response.status, context))
@@ -135,5 +139,11 @@ class OasDiscoveryApiConnectorImpl @Inject()(
 
     s"Basic ${Base64.getEncoder.encodeToString(s"$clientId:$secret".getBytes("UTF-8"))}"
   }
+
+}
+
+object OasDiscoveryApiConnectorImpl {
+
+  val correlationIdHeaderName = "X-Correlation-Id"
 
 }
