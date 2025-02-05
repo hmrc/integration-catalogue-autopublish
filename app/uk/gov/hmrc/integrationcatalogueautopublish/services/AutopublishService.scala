@@ -66,7 +66,7 @@ class AutopublishService @Inject()(
 
   def autopublishOne(publisherReference: String)(implicit hc: HeaderCarrier): Future[Either[AutopublishException, Unit]] = {
     logger.info(s"Starting auto-publish of $publisherReference")
-    val correlationId = correlationIdProvider.provide()
+    val correlationId = correlationIdProvider.provide(hc)
 
     oasDiscoveryConnector.deployment(correlationId, publisherReference) flatMap {
       case Right(deployment) =>

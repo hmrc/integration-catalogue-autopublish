@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.integrationcatalogueautopublish.services
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{description, never, verify, when}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.mockito.MockitoSugar
@@ -184,7 +184,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
 
       when(fixture.oasDiscoveryApiConnector.deployment(eqTo(correlationId), eqTo(publisherReference))(any)).thenReturn(Future.successful(Left(exception)))
 
-      fixture.autopublishService.autopublishOne(publisherReference)(new HeaderCarrier()).map(result => {
+      fixture.autopublishService.autopublishOne(publisherReference)(HeaderCarrier()).map(result => {
         verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
         verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
         verify(fixture.apiRepository, never()).upsert(any)
@@ -192,7 +192,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
       })
     }
 
-    "must handle no deployment" in {
+    "must return OasDiscoveryException when there is no deployment" in {
       val fixture = buildFixture()
       val expected = OasDiscoveryException.deploymentNotFound(publisherReference)
 
@@ -203,6 +203,26 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
         verify(fixture.oasDiscoveryApiConnector, never()).oas(any, any)(any)
         verify(fixture.integrationCatalogueConnector, never()).publishApi(any, any, any)(any)
         verify(fixture.apiRepository, never()).upsert(any)
+        result mustBe Left(expected)
+      })
+    }
+
+    "must return OasDiscoveryException when there is no OAS document" in {
+      val fixture = buildFixture()
+      val deployment = ApiDeployment(publisherReference, Some(Instant.now()))
+      val expected = OasDiscoveryException.oasNotFound(publisherReference)
+      val api = Api(Some(mongoId), publisherReference, Instant.now())
+
+      when(fixture.oasDiscoveryApiConnector.deployment(eqTo(correlationId), eqTo(publisherReference))(any))
+        .thenReturn(Future.successful(Right(deployment)))
+
+      when(fixture.apiRepository.findByPublisherReference(eqTo(publisherReference)))
+        .thenReturn(Future.successful(Some(api)))
+
+      when(fixture.oasDiscoveryApiConnector.oas(eqTo(publisherReference), eqTo(correlationId))(any))
+        .thenReturn(Future.successful(Left(expected)))
+
+      fixture.autopublishService.autopublishOne(publisherReference)(new HeaderCarrier()).map(result => {
         result mustBe Left(expected)
       })
     }
@@ -331,6 +351,7 @@ class AutopublishServiceSpec extends AsyncFreeSpec with Matchers with MockitoSug
 
     val correlationIdProvider = mock[CorrelationIdProvider]
     when(correlationIdProvider.provide()).thenReturn(correlationId)
+    when(correlationIdProvider.provide(any)).thenCallRealMethod()
 
     val autopublishService = new AutopublishService(oasDiscoveryApiConnector, integrationCatalogueConnector, apiRepository, correlationIdProvider)
     Fixture(apiRepository, integrationCatalogueConnector, oasDiscoveryApiConnector, autopublishService)
