@@ -55,8 +55,18 @@ trait ExceptionRaising {
       log(OasDiscoveryException.error(throwable, context))
     }
 
-  }
+    def oasNotFound(id: String): OasDiscoveryException = {
+      log(OasDiscoveryException.oasNotFound(id))
+    }
 
+    def deploymentNotFound(id: String): OasDiscoveryException = {
+      log(OasDiscoveryException.deploymentNotFound(id))
+    }
+
+    def noDeploymentTimestamp(id: String): OasDiscoveryException = {
+      log(OasDiscoveryException.noDeploymentTimestamp(id))
+    }
+  }
 
   private def log[T <: AutopublishException](e: T): T = {
     logger.warn("Raised application exception", e)

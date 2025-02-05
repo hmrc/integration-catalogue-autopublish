@@ -18,7 +18,7 @@ package uk.gov.hmrc.integrationcatalogueautopublish.controllers
 
 import com.google.inject.Inject
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Request}
-import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.OasDiscoveryException
+import uk.gov.hmrc.integrationcatalogueautopublish.models.exception.{OasDeploymentNotFound, OasDiscoveryException, OasNotFound}
 import uk.gov.hmrc.integrationcatalogueautopublish.services.AutopublishService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -41,6 +41,8 @@ class AutopublishController @Inject()(
     implicit request: Request[AnyContent] =>
       autopublishService.autopublishOne(publisherReference).map {
         case Right(_) => NoContent
+        case Left(e: OasDiscoveryException) if e.issue == OasDeploymentNotFound => NotFound
+        case Left(e: OasDiscoveryException) if e.issue == OasNotFound => NotFound
         case Left(e) => throw e
       }
   }

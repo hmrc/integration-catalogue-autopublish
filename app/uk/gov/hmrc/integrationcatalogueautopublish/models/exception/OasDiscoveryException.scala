@@ -22,6 +22,9 @@ sealed trait OasDiscoveryIssue
 
 case object OasDiscoveryUnexpectedResponse extends OasDiscoveryIssue
 case object OasDiscoveryCallError extends OasDiscoveryIssue
+case object OasNotFound extends OasDiscoveryIssue
+case object OasDeploymentNotFound extends OasDiscoveryIssue
+case object OasNoDeploymentTimestamp extends OasDiscoveryIssue
 
 case class OasDiscoveryException(message: String, cause: Throwable, issue: OasDiscoveryIssue) extends AutopublishException(message, cause)
 
@@ -47,6 +50,27 @@ object OasDiscoveryException {
       AutopublishException.addContext("Error calling OAS Discovery API", context),
       throwable,
       OasDiscoveryCallError
+    )
+  }
+
+  def oasNotFound(id: String): OasDiscoveryException = {
+    OasDiscoveryException(
+      "OAS not found for service $id",
+      OasNotFound
+    )
+  }
+
+  def deploymentNotFound(id: String): OasDiscoveryException = {
+    OasDiscoveryException(
+      s"Deployment not found for service $id",
+      OasDeploymentNotFound
+    )
+  }
+
+  def noDeploymentTimestamp(id: String): OasDiscoveryException = {
+    OasDiscoveryException(
+      s"No deployment timestamp for service $id",
+      OasNoDeploymentTimestamp
     )
   }
 

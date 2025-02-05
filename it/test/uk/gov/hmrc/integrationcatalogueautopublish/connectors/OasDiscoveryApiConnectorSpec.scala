@@ -202,7 +202,7 @@ class OasDiscoveryApiConnectorSpec
 
       buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
         result =>
-          result mustBe Right(someDeployments.headOption)
+          result mustBe Right(someDeployments.head)
       }
     }
 
@@ -221,7 +221,7 @@ class OasDiscoveryApiConnectorSpec
 
       buildConnector(Some(apiKey)).deployment(correlationId, publisherReference)(HeaderCarrier()).map {
         result =>
-          result mustBe Right(someDeployments.headOption)
+          result mustBe Right(someDeployments.head)
       }
     }
 
@@ -267,9 +267,14 @@ class OasDiscoveryApiConnectorSpec
           )
       )
 
+      val context = Seq(
+        "publisher-reference" -> publisherReference,
+        OasDiscoveryApiConnectorImpl.correlationIdHeaderName -> correlationId
+      )
+
       buildConnector().deployment(correlationId, publisherReference)(HeaderCarrier()).map {
         result =>
-          result.value mustBe None
+          result mustBe Left(OasDiscoveryException.deploymentNotFound(publisherReference))
       }
     }
   }
