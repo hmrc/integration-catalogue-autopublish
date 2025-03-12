@@ -55,7 +55,7 @@ object OasDiscoveryException {
 
   def oasNotFound(id: String): OasDiscoveryException = {
     OasDiscoveryException(
-      "OAS not found for service $id",
+      s"OAS not found for service $id",
       OasNotFound
     )
   }
